@@ -1,23 +1,23 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import { showToast } from 'vant'
+import { showNotify } from 'vant'
+import { storeBase } from '@/store/base'
+
+const baseStore = storeBase()
+
+baseStore.createBaseParams()
 
 export const axiosInstance: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: '/api/api/v1/',
   timeout: 10000,
   headers: {
     Authorization: 'Bearer 966e0d1827ab33c941e96a0e56b72c880babd9ef87c5836ebb72c6bb7d5cebe3c938634dd8a4a21a0bf12a1f2445661e'
   },
-  data: {
-    'device_no': '80fe9d323dd744468788d2ad578090f5',
-    'product_id': '8020',
-    'app_id': 'Novel',
-    'version': '',
-    'cid': '',
-    'click_id': '',
-    'user_type': '0'
-  }
 })
 
 axiosInstance.interceptors.request.use((config) => {
+
+  config.data = { ...baseStore.baseParams, ...config.data }
 
   return config
 }, (error: AxiosError) => {
@@ -26,10 +26,13 @@ axiosInstance.interceptors.request.use((config) => {
 })
 
 axiosInstance.interceptors.response.use( (response: AxiosResponse) => {
-  console.log(response)
 
-  return response
+  if (response.data.code !== 0) {
+    showToast(response.data.msg)
+    return Promise.reject(response.data)
+  }
+
+  return response.data
 }, (error: AxiosError) => {
-
   return Promise.reject(error)
 })

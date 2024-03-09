@@ -10,6 +10,11 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      fontSize: {
+        ss: ['0.65rem', {
+          lineHeight: '1rem',
+        }]
+      },
       colors:{
         primary: '#165DFF'
       },

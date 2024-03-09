@@ -48,7 +48,7 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach((to, from, failure) => {
-  console.log(failure)
+
 })
 
-export default router
+export { router }

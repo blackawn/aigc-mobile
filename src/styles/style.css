@@ -4,6 +4,6 @@
 
 @layer base {
   body{
-    @apply tracking-wider
+    @apply tracking-wide text-neutral-700
   }
 }

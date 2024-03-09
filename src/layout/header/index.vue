@@ -1,25 +1,30 @@
 <script setup lang="ts">
 import { NavBar, Icon } from 'vant'
 import { useRoute } from 'vue-router'
-import router from '@/router'
+import { router } from '@/router'
+import BaseNav from '@/components/BaseNav/index.vue'
 import AIMenu from '@/components/AIMenu/index.vue'
 import IconHistory from '@/assets/icon/history.svg'
 import IconUser from '@/assets/icon/user.svg'
 
 const route = useRoute()
 
-const leftClick = () => {
+const handleHistoryClick = () => {
 
 }
+
+const handleMineClick = () => {
+  router.push('/client/mine')
+}
+
+
 
 </script>
 
 <template>
-  <NavBar
-    left-arrow
-    :placeholder="true"
-    :border="false"
-    @click-left="leftClick"
+  <BaseNav
+    @click-left="handleHistoryClick"
+    @click-right="handleMineClick"
   >
     <template #left>
       <IconHistory />
@@ -30,8 +35,7 @@ const leftClick = () => {
     <template #right>
       <IconUser />
     </template>
-  </NavBar>
+  </BaseNav>
 </template>
 
-<style>
-</style>
+<style></style>

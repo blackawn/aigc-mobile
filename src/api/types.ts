@@ -1,6 +1,6 @@
 export interface ResponseResult<T> {
   code: number
-  message: string
+  msg: string
   data: T
 }
 
