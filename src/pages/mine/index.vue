@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import BaseNav from '@/components/BaseNav/index.vue'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import { Image, CellGroup, Cell, Button } from 'vant'
+import { Image, CellGroup, Cell, Button, showToast } from 'vant'
 import { router } from '@/router'
 import Api, { UserRewardInfo } from '@/api'
 import { isEmpty } from 'lodash'
@@ -77,8 +77,11 @@ const getUserRewardInfoData = async () => {
 const handleSignOutClick = () => {
   openDialog({
     message: '是否退出登录?',
-    onConfirm: async() => {
-      await Api.user.signOut()
+    onConfirm: async () => {
+      const res = await Api.user.signOut()
+      if(res.code === 0){
+        showToast('退出成功!')
+      }
       closeDialog()
       router.replace('/sign-in')
       userStore.cleanAll()

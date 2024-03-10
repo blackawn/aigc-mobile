@@ -35,14 +35,14 @@ watchEffect(() => {
         />
       </template>
       <template #title>
-        <div class="flex space-x-6">
+        <div class="flex space-x-2.5">
           <span
-            class="duration-300"
+            class="px-2 py-1 duration-300"
             :class="(routeName === 'chat' ? 'scale-100': 'scale-95 text-neutral-400')"
             @click="router.push('/client/ai/chat')"
           >小说</span>
           <span
-            class="duration-300"
+            class="px-2 py-1 duration-300"
             :class="(routeName === 'draw' ? 'scale-100': 'scale-95 text-neutral-400')"
             @click="router.push('/client/ai/draw')"
           >绘图</span>
