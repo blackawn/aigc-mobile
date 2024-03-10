@@ -5,3 +5,5 @@ export default {
   user,
   config
 }
+
+export * from './user/types'

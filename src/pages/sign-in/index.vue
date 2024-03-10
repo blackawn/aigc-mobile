@@ -15,11 +15,11 @@ const signInMode = ref<SignInModeType>('phone')
     <BaseNav />
     <div class="flex-1 p-4">
       <SignInVerify
-        v-if="signInMode === 'phone'"
+        v-show="signInMode === 'phone'"
         @toggle="signInMode = 'account'"
       />
       <SignInAccount
-        v-else
+        v-show="signInMode === 'account'"
         @toggle="signInMode = 'phone'"
       />
     </div>

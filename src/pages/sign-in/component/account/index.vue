@@ -1,22 +1,40 @@
 <script setup lang="ts">
-import { ref,reactive } from 'vue'
-
-import { Button } from 'vant'
-
+import { ref, reactive } from 'vue'
+import { Button, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
-
 import IconPhone from '@/assets/icon/phone.svg'
 import IconPassword from '@/assets/icon/password.svg'
-
+import { storeUser } from '@/store/user'
+import { router } from '@/router'
+import Api, { AccountPasswordSignInParams } from '@/api'
 
 const emit = defineEmits<{
   toggle: [void]
 }>()
 
-const form = reactive({
-  phone: '',
-  verifyCode: ''
+const userStore = storeUser()
+
+const mutual = reactive({
+  signIn: false
 })
+
+const form = reactive<AccountPasswordSignInParams>({
+  name: '',
+  password: '',
+  type: 1
+})
+
+// 登录
+const handleSignInClick = async () => {
+  mutual.signIn = true
+  const res = await Api.user.accountPasswordSignIn(form).finally(() => mutual.signIn = false)
+  if (res.code === 0) {
+    showToast('登录成功!')
+    userStore.modifyUserInfo(res.data)
+    userStore.modifyToken(res.data.token)
+    router.replace('/client/home')
+  }
+}
 
 </script>
 <template>
@@ -37,6 +55,7 @@ const form = reactive({
           </div>
           <div class="flex-1">
             <input
+              v-model="form.name"
               type="text"
               placeholder="请输入手机号"
               class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
@@ -47,22 +66,32 @@ const form = reactive({
           <IconPassword />
           <div class="flex-1">
             <input
-              v-model="form.verifyCode"
+              v-model="form.password"
               type="password"
               placeholder="请输入密码"
               class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
             >
           </div>
-          <div class="h-4 w-px bg-neutral-300" />
-          <span class="text-sm text-neutral-400">找回密码</span>
+          <Button
+            round
+            plain
+            type="default"
+            size="small"
+            class="!px-4"
+          >
+            找回密码
+          </Button>
         </div>
       </div>
-      <div class="mt-16">
+      <div class="mt-12">
         <Button
           block
           round
           type="primary"
           class="text-base"
+          :disabled="(mutual.signIn || !form.name || !form.password)"
+          :loading="mutual.signIn"
+          @click="handleSignInClick"
         >
           登&nbsp;&nbsp;录
         </Button>

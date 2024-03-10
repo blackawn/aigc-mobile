@@ -6,7 +6,7 @@ interface DialogEvent {
 }
 
 export const useBaseDialog = () => {
-  const open = (opt: DialogOptions & DialogEvent) => {
+  const openDialog = (opt: DialogOptions & DialogEvent) => {
 
     const title = opt.title || '提示'
 
@@ -41,7 +41,7 @@ export const useBaseDialog = () => {
     })
   }
   return {
-    open,
-    close: closeDialog
+    openDialog,
+    closeDialog
   }
 }

@@ -1,21 +1,97 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { useBaseDialog } from '@/composables/useBaseDialog'
-import { router } from '@/router'
-import { Image, CellGroup, Cell, Button } from 'vant'
 import BaseNav from '@/components/BaseNav/index.vue'
+import { useBaseDialog } from '@/composables/useBaseDialog'
+import { Image, CellGroup, Cell, Button } from 'vant'
+import { router } from '@/router'
+import Api, { UserRewardInfo } from '@/api'
+import { isEmpty } from 'lodash'
+import { storeUser } from '@/store/user'
+import { numberThousand } from '@/utils//format'
 
-const { open } = useBaseDialog()
+interface VipStatus {
+  color: string;
+  value: string;
+}
 
+const userStore = storeUser()
+
+const { openDialog, closeDialog } = useBaseDialog()
+
+// 佣金信息
+const userRewardInfoData = ref<UserRewardInfo>({
+  invited_users: 0,
+  rate: '0%',
+  rewards_remain: 0,
+  withdraw: 0,
+  withdraw_in_review: 0
+})
+
+// 会员信息
+const vipStatusMap: Record<string, VipStatus> = {
+  0: {
+    color: 'bg-neutral-500',
+    value: '未开通'
+  },
+  1: {
+    color: 'bg-green-500',
+    value: '付费'
+  },
+  default: {
+    color: 'bg-red-500',
+    value: '过期'
+  }
+}
+
+// 会员开通状态
+const userVipStatus = computed(() => {
+  return vipStatusMap[userStore.userInfo.is_vip] || vipStatusMap.default
+})
+
+// 小说总数
+const chatTotal = computed(() => {
+  const { gpt_tokens, gpt_tokens_used } = userStore.userInfo
+  return numberThousand((gpt_tokens - gpt_tokens_used)) || 0
+})
+
+// 绘画总数
+const paintTotal = computed(() => {
+  const { dallE3_total, dallE3_times_used, mj_total, mj_times_used } = userStore.userInfo
+  return numberThousand((dallE3_total + mj_total) - (dallE3_times_used + mj_times_used)) || 0
+})
+
+// 获取用户信息
+const getUserInfoData = async () => {
+  const res = await Api.user.getUserInfo()
+  userStore.modifyUserInfo(res.data)
+}
+
+// 获取用户佣金信息
+const getUserRewardInfoData = async () => {
+  const res = await Api.user.getUserRewardInfo()
+  userRewardInfoData.value = res.data
+}
+
+// 退出登录
 const handleSignOutClick = () => {
-  open({
+  openDialog({
     message: '是否退出登录?',
-    onConfirm: ()=> {
+    onConfirm: async() => {
+      await Api.user.signOut()
+      closeDialog()
       router.replace('/sign-in')
+      userStore.cleanAll()
     }
   })
 }
+
+onMounted(() => {
+  if (userStore.token) {
+    getUserInfoData()
+    getUserRewardInfoData()
+  }
+})
 
 </script>
 <template>
@@ -24,24 +100,47 @@ const handleSignOutClick = () => {
       <BaseNav class="text-white" />
       <div class="p-4">
         <div class="ml-2 flex">
-          <div class="flex items-center justify-center rounded-full border-2 border-white">
+          <div class="flex items-center justify-center place-self-start rounded-full border-2 border-neutral-300">
             <Image
               width="64"
               height="64"
               round
-              src="https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg"
-            />
+              :src="userStore.userInfo.avatar"
+            >
+              <template #loading />
+              <template #error>
+                加载失败
+              </template>
+            </Image>
           </div>
-          <div class="ml-3 flex flex-col text-white">
-            <div class="my-1 ">
+          <div class="ml-3 flex flex-col truncate text-white">
+            <div class="my-1 truncate">
               <span
+                v-if="isEmpty(userStore.userInfo)"
                 class="text-xl"
                 @click="router.push('/sign-in')"
               >立即登录</span>
+              <span
+                v-else
+                class="text-xl"
+              >{{ userStore.userInfo.nickname }}</span>
             </div>
             <div class="flex items-center">
-              <span class="mr-1.5 rounded bg-neutral-500 px-1 py-0.5 text-ss">免费版</span>
-              <span class="text-sm text-neutral-300">登陆体验更多创作功能</span>
+              <span
+                v-if="(!isEmpty(userStore.userInfo))"
+                class="mr-1.5 rounded px-1 py-[0.075rem] text-ss"
+                :class="userVipStatus.color"
+              >{{ userVipStatus.value }}</span>
+              <span
+                v-if="(isEmpty(userStore.userInfo))"
+                class="truncate text-sm text-neutral-300"
+              >登陆体验更多创作功能</span>
+              <span
+                v-else
+                class="truncate text-sm text-neutral-300"
+              >小说:&nbsp;{{ chatTotal }}次&nbsp;&nbsp;绘图:&nbsp;{{
+                paintTotal
+              }}次</span>
             </div>
           </div>
         </div>
@@ -98,34 +197,35 @@ const handleSignOutClick = () => {
           <template #label>
             <div class="font-bold text-neutral-700">
               <span class="text-lg">￥</span>
-              <span class="text-2xl">123.4</span>
+              <span class="text-2xl">{{ userRewardInfoData.rewards_remain }}</span>
             </div>
           </template>
         </Cell>
         <Cell
           size="large"
           title="已注册人数"
-          value="4人"
+          :value="`${userRewardInfoData.invited_users}人`"
         />
         <Cell
           size="large"
           title="佣金比例"
-          value="30%"
+          :value="userRewardInfoData.rate"
         />
         <Cell
           size="large"
           title="确认中的佣金"
-          value="￥20"
+          :value="`￥${userRewardInfoData.withdraw_in_review}`"
         />
         <Cell
           size="large"
           title="累计获得佣金"
-          value="￥20"
+          :value="`￥${userRewardInfoData.withdraw}`"
         />
       </CellGroup>
     </div>
     <div class="px-4 pt-2">
       <Button
+        v-if="userStore.token"
         block
         plain
         type="danger"

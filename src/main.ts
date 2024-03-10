@@ -4,9 +4,15 @@ import App from './App.vue'
 import { router } from './router'
 import store from './store'
 
+import { storeConfig } from '@/store/config'
+
 import 'vant/lib/index.css'
 
 import { longPress } from '@/directive/long-press/long-press'
+
+const configStore = storeConfig(store)
+
+configStore.createBaseParams()
 
 createApp(App)
   .use(router)

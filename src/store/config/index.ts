@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { customAlphabet } from 'nanoid'
 
@@ -6,32 +7,36 @@ export interface BaseParams {
   device_no: string;
   product_id: string;
   app_id: string;
-  version_name: string;
-  version_code: string;
+  version: string;
   cid: string;
   click_id: string;
+  user_type: string;
 }
 
-export const storeBase = defineStore('baseStore', () => {
+export const storeConfig = defineStore('configStore', () => {
+
+  const nanoid = customAlphabet('1234567890abcdef', 32)
 
   const baseParams = ref<BaseParams | null>(null)
 
+  const deviceId = useStorage<string>('deviceId', nanoid())
+
   const createBaseParams = () => {
 
-    const nanoid = customAlphabet('1234567890abcdef', 37)
-
     baseParams.value = {
-      device_no: nanoid() ,
+      device_no: deviceId.value,
       product_id: '8020',
       app_id: 'Novel',
       cid: '',
       click_id: '',
-      version_name: '1.0.1',
-      version_code: '101'
+      version: '',
+      user_type: '0'
     }
+    
   }
 
   return {
+    deviceId,
     baseParams,
     createBaseParams
   }

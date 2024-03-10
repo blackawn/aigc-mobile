@@ -1,32 +1,60 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { Button, showToast } from 'vant'
-
 import { Icon } from '@iconify/vue'
-
 import IconPhone from '@/assets/icon/phone.svg'
 import IconVerifyCode from '@/assets/icon/verify_code.svg'
-
-
-import Api from '@/api'
+import { storeUser } from '@/store/user'
+import { router } from '@/router'
+import Api, { PhoneVerifyCodeSignInParams } from '@/api'
+import { useCountdown } from '@/composables/useCountdown'
+import { isEmpty } from 'lodash'
 
 const emit = defineEmits<{
   toggle: [void]
 }>()
 
-const form = reactive({
-  phone: '',
-  verifyCode: ''
+const userStore = storeUser()
+
+const { start, isActive, count } = useCountdown()
+
+const mutual = reactive({
+  signIn: false,
+  getCode: false
 })
 
+const form = reactive<PhoneVerifyCodeSignInParams>({
+  name: '',
+  code: '',
+  type: 2
+})
+
+// 发送手机验证码
 const handleSendVerifyCode = async () => {
+
+  mutual.getCode = true
   const res = await Api.user.sendVerifyCode({
-    phone: form.phone,
-    type: '2'
-  })
+    phone: form.name,
+    type: 2
+  }).finally(() => mutual.getCode = false)
+
   console.log(res)
   if (res.code === 0) {
+    start()
     showToast('发送成功！请注意接收')
+  }
+
+}
+
+// 登录
+const handleSignInClick = async () => {
+  mutual.signIn = true
+  const res = await Api.user.phoneVerifyCodeSignIn(form).finally(() => mutual.signIn = false)
+  if (res.code === 0) {
+    showToast('登录成功!')
+    userStore.modifyUserInfo(res.data)
+    userStore.modifyToken(res.data.token)
+    router.replace('/client/home')
   }
 }
 
@@ -49,11 +77,12 @@ const handleSendVerifyCode = async () => {
           </div>
           <div class="flex-1">
             <input
-              v-model="form.phone"
+              v-model="form.name"
               type="text"
+              maxlength="11"
               placeholder="请输入手机号"
               class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
-              @input="e => form.phone = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
+              @input="e => form.name = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
             >
           </div>
         </div>
@@ -61,12 +90,12 @@ const handleSendVerifyCode = async () => {
           <IconVerifyCode />
           <div class="flex-1 px-3">
             <input
-              v-model="form.verifyCode"
+              v-model="form.code"
               type="text"
               placeholder="请输入验证码"
               maxlength="6"
               class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
-              @input="e => form.verifyCode = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
+              @input="e => form.code = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
             >
           </div>
           <Button
@@ -74,9 +103,10 @@ const handleSendVerifyCode = async () => {
             type="primary"
             size="small"
             class="!px-4"
+            :disabled="(isActive || mutual.getCode || isEmpty(form.name))"
             @click="handleSendVerifyCode"
           >
-            获取验证码
+            {{ isActive ? `重新获取${count}秒` : '获取验证码' }}
           </Button>
         </div>
       </div>
@@ -86,6 +116,9 @@ const handleSendVerifyCode = async () => {
           round
           type="primary"
           class="text-base"
+          :disabled="(mutual.signIn || !form.name || !form.code)"
+          :loading="mutual.signIn"
+          @click="handleSignInClick"
         >
           登&nbsp;&nbsp;录
         </Button>
