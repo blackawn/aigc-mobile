@@ -24,8 +24,8 @@ const props = withDefaults(defineProps<Partial<NavBarProps & NavBarEvent>>(), {
     <template #left>
       <slot name="left">
         <Icon
-          icon="uiw:left"
-          class="text-xl"
+          icon="fluent:chevron-left-32-filled"
+          class="text-2xl"
         />
       </slot>
     </template>
@@ -37,4 +37,9 @@ const props = withDefaults(defineProps<Partial<NavBarProps & NavBarEvent>>(), {
     </template>
   </NavBar>
 </template>
-<style></style>
+<style>
+.van-nav-bar__left,
+.van-nav-bar__right{
+  @apply active:text-neutral-500
+}
+</style>

@@ -8,7 +8,7 @@ import { storeUser } from '@/store/user'
 import { router } from '@/router'
 import Api, { AccountPasswordSignInParams } from '@/api'
 
-const emit = defineEmits<{
+const emits = defineEmits<{
   toggle: [void]
 }>()
 
@@ -32,7 +32,7 @@ const handleSignInClick = async () => {
     showToast('登录成功!')
     userStore.modifyUserInfo(res.data)
     userStore.modifyToken(res.data.token)
-    router.replace('/client/home')
+    router.replace('/client/ai')
   }
 }
 
@@ -77,7 +77,7 @@ const handleSignInClick = async () => {
             plain
             type="default"
             size="small"
-            class="!px-4"
+            class="!px-4 !text-neutral-500"
           >
             找回密码
           </Button>
@@ -98,8 +98,8 @@ const handleSignInClick = async () => {
       </div>
       <div class="mt-8 text-center">
         <span
-          class="text-sm text-primary"
-          @click="emit('toggle')"
+          class="text-sm text-primary active:!text-neutral-400"
+          @click="emits('toggle')"
         >使用验证码登录/注册</span>
       </div>
     </div>

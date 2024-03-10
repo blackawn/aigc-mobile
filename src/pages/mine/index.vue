@@ -55,8 +55,8 @@ const chatTotal = computed(() => {
   return numberThousand((gpt_tokens - gpt_tokens_used)) || 0
 })
 
-// 绘画总数
-const paintTotal = computed(() => {
+// 绘图总数
+const drawTotal = computed(() => {
   const { dallE3_total, dallE3_times_used, mj_total, mj_times_used } = userStore.userInfo
   return numberThousand((dallE3_total + mj_total) - (dallE3_times_used + mj_times_used)) || 0
 })
@@ -117,7 +117,7 @@ onMounted(() => {
             <div class="my-1 truncate">
               <span
                 v-if="isEmpty(userStore.userInfo)"
-                class="text-xl"
+                class="text-xl active:text-neutral-400"
                 @click="router.push('/sign-in')"
               >立即登录</span>
               <span
@@ -139,13 +139,13 @@ onMounted(() => {
                 v-else
                 class="truncate text-sm text-neutral-300"
               >小说:&nbsp;{{ chatTotal }}次&nbsp;&nbsp;绘图:&nbsp;{{
-                paintTotal
+                drawTotal
               }}次</span>
             </div>
           </div>
         </div>
         <div class="mt-6 grid grid-cols-2 space-x-3">
-          <div class="flex-1 items-center rounded-2xl bg-white p-3.5">
+          <div class="flex-1 items-center rounded-2xl bg-white p-3.5 active:bg-neutral-200">
             <div class="flex items-center">
               <span class="font-bold">购买套餐</span>
               <span class="ml-1">
@@ -165,7 +165,7 @@ onMounted(() => {
               </span>
             </div>
           </div>
-          <div class="flex-1 items-center rounded-2xl bg-white p-3.5">
+          <div class="flex-1 items-center rounded-2xl bg-white p-3.5 active:bg-neutral-200">
             <div class="flex items-center">
               <span class="font-bold">加入社<span class="text-red-400">群</span></span>
               <span class="ml-1">

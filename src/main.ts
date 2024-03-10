@@ -8,7 +8,7 @@ import { storeConfig } from '@/store/config'
 
 import 'vant/lib/index.css'
 
-import { longPress } from '@/directive/long-press/long-press'
+import { longPress } from '@/directive/long-press'
 
 const configStore = storeConfig(store)
 

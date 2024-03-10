@@ -10,7 +10,7 @@ import Api, { PhoneVerifyCodeSignInParams } from '@/api'
 import { useCountdown } from '@/composables/useCountdown'
 import { isEmpty } from 'lodash'
 
-const emit = defineEmits<{
+const emits = defineEmits<{
   toggle: [void]
 }>()
 
@@ -33,6 +33,7 @@ const form = reactive<PhoneVerifyCodeSignInParams>({
 const handleSendVerifyCode = async () => {
 
   mutual.getCode = true
+
   const res = await Api.user.sendVerifyCode({
     phone: form.name,
     type: 2
@@ -48,13 +49,18 @@ const handleSendVerifyCode = async () => {
 
 // 登录
 const handleSignInClick = async () => {
+
   mutual.signIn = true
+  
   const res = await Api.user.phoneVerifyCodeSignIn(form).finally(() => mutual.signIn = false)
+
   if (res.code === 0) {
+
     showToast('登录成功!')
     userStore.modifyUserInfo(res.data)
     userStore.modifyToken(res.data.token)
-    router.replace('/client/home')
+    router.replace('/client/ai')
+
   }
 }
 
@@ -125,8 +131,8 @@ const handleSignInClick = async () => {
       </div>
       <div class="mt-8 text-center">
         <span
-          class="text-sm text-primary"
-          @click="emit('toggle')"
+          class="text-sm text-primary active:!text-neutral-400"
+          @click="emits('toggle')"
         >使用账号密码登录</span>
       </div>
     </div>

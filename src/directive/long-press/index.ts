@@ -1,4 +1,11 @@
-import { Binding } from './types'
+export interface Binding {
+  value: {
+    mousedownCallback: (event: MouseEvent) => void
+    mouseupCallback: (event: MouseEvent) => void
+    mouseleaveCallback: (event: MouseEvent) => void
+    time: number
+  }
+}
 
 export const longPress = ((element: HTMLElement, binding: Binding) => {
   let timer: ReturnType<typeof setTimeout> | null = null

@@ -2,19 +2,19 @@ import { ref, watchEffect } from 'vue'
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-export const useCountdown = (initialCount = 60) => {
+export const useCountdown = (initCount = 60) => {
 
-  const count = ref(initialCount)
+  const count = ref(initCount)
 
   const isActive = ref(false)
 
-  const start = (record = true) => {
+  const start = (isRecord = true) => {
 
     if (isActive.value) return
 
     isActive.value = true
 
-    if (record) {
+    if (isRecord) {
       localStorage.setItem('countdown', new Date().getTime().toString())
     }
 
@@ -22,7 +22,7 @@ export const useCountdown = (initialCount = 60) => {
       count.value--
       if (count.value === 0) {
         clean()
-        count.value = initialCount
+        count.value = initCount
         isActive.value = false
       }
     }, 1000)
@@ -30,15 +30,15 @@ export const useCountdown = (initialCount = 60) => {
 
   watchEffect(() => {
 
-    const prevTime = Number(localStorage.getItem('countdown'))
+    const prevTime = Number(localStorage.getItem('countdown')) || 0
     
     if (prevTime > 0) {
       const currentTime = new Date().getTime()
 
       const between = Math.floor((currentTime - prevTime) / 1000)
 
-      if (between < initialCount) {
-        count.value = initialCount - between
+      if (between < initCount) {
+        count.value = initCount - between
         start(false)
       }
     }
@@ -54,6 +54,7 @@ export const useCountdown = (initialCount = 60) => {
   return {
     start,
     isActive,
-    count
+    count,
+    clean
   }
 }

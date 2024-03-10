@@ -7,26 +7,31 @@ export const routeConfig = [
   },
   {
     path: '/client',
-    redirect: '/client/home',
+    redirect: '/client/ai/chat',
     name: 'client',
     component: () => import('@/layout/index.vue'),
     children: [
       {
-        path: '/client/home',
-        name: 'home',
-        meta: {
-          title: '首页',
-          tarbarIcon: 'flag-o',
-        },
-        component: () => import('@/pages/home/index.vue')
+        path: '/client/ai',
+        redirect: '/client/ai/chat',
+        name: 'ai',
+        component: () => import('@/pages/ai/index.vue'),
+        children: [
+          {
+            path: '/client/ai/chat',
+            name: 'chat',
+            component: () => import('@/pages/ai/component/chat/index.vue'),
+          },
+          {
+            path: '/client/ai/draw',
+            name: 'draw',
+            component: () => import('@/pages/ai/component/draw/index.vue'),
+          }
+        ]
       },
       {
         path: '/client/mine',
         name: 'mine',
-        meta: {
-          title: '我的',
-          tarbarIcon: 'contact',
-        },
         component: () => import('@/pages/mine/index.vue')
       }
     ]
