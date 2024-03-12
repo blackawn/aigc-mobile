@@ -20,12 +20,12 @@ export const routeConfig = [
           {
             path: '/client/ai/chat',
             name: 'chat',
-            component: () => import('@/pages/ai/component/chat/index.vue'),
+            component: () => import('@/pages/ai/chat/index.vue'),
           },
           {
             path: '/client/ai/draw',
             name: 'draw',
-            component: () => import('@/pages/ai/component/draw/index.vue'),
+            component: () => import('@/pages/ai/draw/index.vue'),
           }
         ]
       },

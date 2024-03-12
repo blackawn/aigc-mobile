@@ -38,12 +38,16 @@ watchEffect(() => {
         <div class="flex space-x-2.5">
           <span
             class="px-2 py-1 duration-300"
-            :class="(routeName === 'chat' ? 'scale-100': 'scale-95 text-neutral-400')"
+            :class="{
+              'scale-95 text-neutral-400': (routeName !== 'chat')
+            }"
             @click="router.push('/client/ai/chat')"
           >小说</span>
           <span
             class="px-2 py-1 duration-300"
-            :class="(routeName === 'draw' ? 'scale-100': 'scale-95 text-neutral-400')"
+            :class="{
+              'scale-95 text-neutral-400': (routeName !== 'draw')
+            }"
             @click="router.push('/client/ai/draw')"
           >绘图</span>
         </div>
@@ -55,7 +59,7 @@ watchEffect(() => {
         />
       </template>
     </BaseNav>
-    <div class="flex-1">
+    <div class="flex-1 overflow-hidden">
       <RouterView />
     </div>
   </div>
