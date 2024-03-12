@@ -114,8 +114,6 @@ const handleGenerationBackground = () => {
 
   onMessageResponse<string>((data) => {
 
-    pendingUpdates.push(JSON.parse(data).content)
-
     background.content += JSON.parse(data).content
     
     requestIdleCallback(() => scrollElToBottom())
