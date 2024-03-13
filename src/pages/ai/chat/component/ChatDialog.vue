@@ -18,8 +18,8 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
   })
 })
 
-const emits = defineEmits<{
-  buttonClick: [value: string]
+const emit = defineEmits<{
+  (e: 'button', value: string): void
 }>()
 
 </script>
@@ -37,17 +37,16 @@ const emits = defineEmits<{
     />
     <div
       v-if="!isEmpty(props.data.mutual)"
-      class="-ml-0.5 mt-2 flex flex-wrap"
+      class="mt-2 flex flex-wrap gap-1"
     >
       <div
         v-for="item in props.data.mutual?.buttonList"
         :key="item"
-        class="m-0.5"
       >
         <Button
           v-bind="props.buttonProps"
           size="small"
-          @click="emits('buttonClick', item)"
+          @click="emit('button', item)"
         >
           {{ item }}
         </Button>

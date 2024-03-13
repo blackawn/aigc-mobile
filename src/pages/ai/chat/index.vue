@@ -3,13 +3,15 @@ import { ref, watch } from 'vue'
 import { Icon, _api } from '@iconify/vue'
 import { Button } from 'vant'
 import ChatDialog from './component/ChatDialog.vue'
-import BackgroundCard from './component/BackgroundCard.vue'
+import BackgroundGeneration, { BackgroundType } from './component/BackgroundGeneration.vue'
+import RoleGeneration from './component/RoleGeneration.vue'
 import { DialogType } from './component/types'
 import { onMounted } from 'vue'
 import { useEventSource } from '@/composables/useEventSource'
 import Api, { CreateNovelParams, CreateNovelBackgroundRes } from '@/api'
 import { watchEffect } from 'vue'
 import { reactive } from 'vue'
+import { EventSourcePolyfill } from 'event-source-polyfill'
 
 const userInput = ref('')
 
@@ -24,12 +26,13 @@ const delayMutual = ref(false)
 
 const scrollEl = ref<HTMLDivElement | null>(null)
 
+const backgroundInst = ref<EventSource | null>(null)
+
 const background = reactive({
   content: '',
-  pervGenerationKeyWord: ''
+  pervGenerationKeyword: '',
+  connected: false
 })
-
-const { startConnect, onMessageResponse, closeConnect, onErrorCallback, connected } = useEventSource()
 
 const novelGenerationProcessData = ref<NovelGenerationProcess>({
   step: 0,
@@ -98,27 +101,31 @@ const scrollElToBottom = () => {
 // 生成背景
 const handleGenerationBackground = () => {
 
-  closeConnect()
-
-  const pendingUpdates = []
+  background.connected = true
 
   background.content = ''
 
   if (userInput.value) {
-    background.pervGenerationKeyWord = userInput.value
+    background.pervGenerationKeyword = userInput.value
   }
 
-  const keyword = userInput.value || background.pervGenerationKeyWord
+  const keyword = userInput.value || background.pervGenerationKeyword
 
-  startConnect(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${keyword}`)
+  backgroundInst.value = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${keyword}`)
 
-  onMessageResponse<string>((data) => {
-
-    background.content += JSON.parse(data).content
-    
+  backgroundInst.value.addEventListener('message', (message) => {
+    background.content += JSON.parse(message.data).content
     requestIdleCallback(() => scrollElToBottom())
   })
 
+  backgroundInst.value.addEventListener('error', () => {
+    background.connected = false
+  })
+
+}
+
+const handleConfirmBackground = (data: BackgroundType) => {
+  novelGenerationProcessData.value.step = 3
 }
 
 // 用户输入
@@ -156,7 +163,7 @@ onMounted(() => {
       class="flex-1 overflow-x-hidden"
     >
       <div class="p-4">
-        <div class="flex flex-col space-y-5">
+        <div class="flex flex-col gap-y-5">
           <ChatDialog
             v-for="data in novelGenerationProcessData.dialog"
             :key="data.time"
@@ -164,14 +171,16 @@ onMounted(() => {
             :button-props="{
               disabled: delayMutual
             }"
-            @button-click="v => themeSelect(v)"
+            @button="v => themeSelect(v)"
           />
-          <BackgroundCard
-            v-if="(background.content !== '' && novelGenerationProcessData.step === 2)"
+          <BackgroundGeneration
+            
             :data="background.content"
-            :allow-mutual="!connected"
+            :allow-mutual="(!background.connected)"
             @afresh="handleGenerationBackground"
+            @confirm="handleConfirmBackground"
           />
+          <RoleGeneration />
         </div>
       </div>
     </div>

@@ -16,11 +16,9 @@ export const createNovel = (params: CreateNovelParams): R<CreateNovelRes> => {
 export const createNovelBackground = (params: CreateNovelBackgroundParams): R<CreateNovelBackgroundRes> => {
   return axiosInstance.get('/novel/generate/background', {
     params,
-    responseType: 'stream', // 指定响应类型为流
-    transformResponse: [function (data) {
-      // 将每一行的 JSON 数据解析为对象
-      const jsonData = JSON.parse(data)
-      return jsonData
-    }],
+    responseType: 'text', // 指定响应类型为流
+    headers:{
+      'Content-Type': 'text/event-stream'
+    },
   })
 }

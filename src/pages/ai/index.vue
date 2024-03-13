@@ -35,7 +35,7 @@ watchEffect(() => {
         />
       </template>
       <template #title>
-        <div class="flex space-x-2.5">
+        <div class="flex gap-x-2.5">
           <span
             class="px-2 py-1 duration-300"
             :class="{

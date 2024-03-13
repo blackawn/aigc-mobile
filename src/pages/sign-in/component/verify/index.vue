@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { Button, showToast } from 'vant'
+import { reactive } from 'vue'
+import { Button, showToast, Field, Form } from 'vant'
 import { Icon } from '@iconify/vue'
 import IconPhone from '@/assets/icon/phone.svg'
 import IconVerifyCode from '@/assets/icon/verify_code.svg'
@@ -10,8 +10,8 @@ import Api, { PhoneVerifyCodeSignInParams } from '@/api'
 import { useCountdown } from '@/composables/useCountdown'
 import { isEmpty } from 'lodash'
 
-const emits = defineEmits<{
-  toggle: [void]
+const emit = defineEmits<{
+  (e: 'toggle'): void
 }>()
 
 const userStore = storeUser()
@@ -51,7 +51,7 @@ const handleSendVerifyCode = async () => {
 const handleSignInClick = async () => {
 
   mutual.signIn = true
-  
+
   const res = await Api.user.phoneVerifyCodeSignIn(form).finally(() => mutual.signIn = false)
 
   if (res.code === 0) {
@@ -72,71 +72,84 @@ const handleSignInClick = async () => {
       <span class="mt-2 text-xs text-neutral-400">未注册的手机号将自动注册并登录</span>
     </div>
     <div class="pb-10">
-      <div>
-        <div class="flex items-center border-b border-neutral-300 py-3">
-          <IconPhone />
-          <div class="flex items-center px-3">
-            <span class="text-sm">+86</span>
-            <span class="ml-1">
-              <Icon icon="solar:alt-arrow-down-outline" />
-            </span>
-          </div>
-          <div class="flex-1">
-            <input
-              v-model="form.name"
-              type="text"
-              maxlength="11"
-              placeholder="请输入手机号"
-              class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
-              @input="e => form.name = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
+      <Form
+        autocomplete="off"
+        @submit="handleSignInClick"
+      >
+        <Field
+          v-model="form.name"
+          placeholder="请输入手机号"
+          size="large"
+          type="number"
+          :label-width="'fit-content'"
+          clearable
+          label-class="flex"
+          maxlength="11"
+          :rules="[{ required: true, message: '请输入用手机号' }]"
+        >
+          <template #left-icon>
+            <IconPhone />
+          </template>
+          <template #label>
+            <div class="flex items-center pl-2">
+              <span class="text-sm">+86</span>
+              <span class="ml-1">
+                <Icon icon="solar:alt-arrow-down-outline" />
+              </span>
+            </div>
+          </template>
+        </Field>
+        <Field
+          v-model="form.code"
+          placeholder="请输入验证码"
+          type="number"
+          maxlength="6"
+          size="large"
+          :label-width="'fit-content'"
+          clearable
+          label-class="flex"
+          :rules="[{ required: true, message: '请输入验证码' }]"
+        >
+          <template #left-icon>
+            <IconVerifyCode />
+          </template>
+          <template #label />
+          <template #right-icon>
+            <Button
+              round
+              type="primary"
+              size="small"
+              class="!px-4"
+              :disabled="(isActive || mutual.getCode || isEmpty(form.name))"
+              @click="handleSendVerifyCode"
             >
-          </div>
-        </div>
-        <div class="mt-4 flex items-center border-b border-neutral-300 py-3">
-          <IconVerifyCode />
-          <div class="flex-1 px-3">
-            <input
-              v-model="form.code"
-              type="text"
-              placeholder="请输入验证码"
-              maxlength="6"
-              class="w-full placeholder:text-sm placeholder:text-[#C8C9CC]"
-              @input="e => form.code = (e.target as HTMLInputElement).value.replace(/\D/g, '')"
-            >
-          </div>
+              {{ isActive ? `重新获取${count}秒` : '获取验证码' }}
+            </Button>
+          </template>
+        </Field>
+
+        <div class="mt-12 px-4">
           <Button
+            block
             round
             type="primary"
-            size="small"
-            class="!px-4"
-            :disabled="(isActive || mutual.getCode || isEmpty(form.name))"
-            @click="handleSendVerifyCode"
+            class="text-base"
+            :disabled="(mutual.signIn)"
+            :loading="mutual.signIn"
+            native-type="submit"
           >
-            {{ isActive ? `重新获取${count}秒` : '获取验证码' }}
+            登&nbsp;&nbsp;录
           </Button>
         </div>
-      </div>
-      <div class="mt-12">
-        <Button
-          block
-          round
-          type="primary"
-          class="text-base"
-          :disabled="(mutual.signIn || !form.name || !form.code)"
-          :loading="mutual.signIn"
-          @click="handleSignInClick"
-        >
-          登&nbsp;&nbsp;录
-        </Button>
-      </div>
+      </Form>
       <div class="mt-8 text-center">
         <span
           class="text-sm text-primary active:!text-neutral-400"
-          @click="emits('toggle')"
+          @click="emit('toggle')"
         >使用账号密码登录</span>
       </div>
     </div>
-    <div class="flex justify-center space-x-6">
+    <div class="flex justify-center gap-x-6">
       <div class="flex items-center justify-center rounded-full border border-neutral-300 p-2">
         <Icon
           icon="ic:baseline-wechat"
@@ -152,4 +165,8 @@ const handleSignInClick = async () => {
     </div>
   </div>
 </template>
-<style></style>
+<style>
+.van-field__left-icon {
+  @apply flex items-center
+}
+</style>

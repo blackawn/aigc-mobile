@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Button, showToast } from 'vant'
+import { computed, ref, h, PropType } from 'vue'
+import { Button, showToast,Field } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
+import BackgroundSetting from './BackgroundSetting.vue'
 import { Icon } from '@iconify/vue'
 
 interface BackgroundCardProps {
@@ -9,7 +10,7 @@ interface BackgroundCardProps {
   allowMutual: boolean
 }
 
-interface BackgroundType {
+export interface BackgroundType {
   title: string
   time: string
   address: string
@@ -21,22 +22,24 @@ const props = withDefaults(defineProps<BackgroundCardProps>(), {
   allowMutual: false
 })
 
-const emits = defineEmits<{
-  backgroundSelect: [void]
-  afresh: [void]
-  confirm: [data: BackgroundType]
+const emit = defineEmits<{
+  (e: 'backgroundSelect'): void
+  (e: 'afresh'): void
+  (e: 'confirm', data: BackgroundType): void
 }>()
 
 const { openDialog, closeDialog } = useBaseDialog()
 
 const selected = ref(-1)
 
+const backgroundSettingInst = ref<InstanceType<typeof BackgroundSetting> | null>(null)
+
 const selectBackground = (index: number) => {
 
   if (!props.allowMutual) return
 
   selected.value = selected.value === index ? -1 : index
-  emits('backgroundSelect')
+  emit('backgroundSelect')
 }
 
 const backgroundList = computed<Array<BackgroundType>>(() => {
@@ -64,7 +67,7 @@ const handleAfreshClick = () => {
     message: '确定重新生成?',
     onConfirm() {
       selected.value = -1
-      emits('afresh')
+      emit('afresh')
       closeDialog()
     },
   })
@@ -73,27 +76,32 @@ const handleAfreshClick = () => {
 
 const handleConfirmClick = () => {
 
-  if (selected.value < 0) {
-    showToast('请选择背景!')
-    return
-  }
+  // if (selected.value < 0) {
+  //   showToast('请选择背景!')
+  //   return
+  // }
 
   openDialog({
-    message: `确定选择 ${backgroundList.value[selected.value].title} ?`,
+    title: '背景设定',
+    message: () => h(BackgroundSetting, {
+      data: backgroundList.value[selected.value],
+      ref: backgroundSettingInst
+    }),
+
     onConfirm() {
-      emits('confirm', backgroundList.value[selected.value])
-      closeDialog()
-    },
+      emit('confirm', (backgroundSettingInst.value?.backgroundSettingData as BackgroundType))
+    }
   })
+
 }
 
 </script>
 <template>
   <div class="rounded-md bg-white p-2.5 shadow-sm">
-    <h5 class="py-1 text-xl text-primary">
-      你想选择以下哪个片段作为小说的背景？
-    </h5>
-    <div class="mt-2 flex flex-col space-y-2">
+    <div class="mb-3 mt-1">
+      <span class="text-primary">你想选择以下哪个片段作为小说的背景？</span>
+    </div>
+    <div class="flex flex-col gap-y-2">
       <div
         v-for="(item, index) in backgroundList"
         :key="item.title"
@@ -103,9 +111,9 @@ const handleConfirmClick = () => {
         }"
         @click="selectBackground(index)"
       >
-        <h6 class="text-base">
-          {{ item.title }}
-        </h6>
+        <div>
+          <span>{{ item.title }}</span>
+        </div>
         <div class="mt-0.5 text-sm">
           <div>
             <span>时间:&nbsp;</span><span>{{ item.time }}</span>
@@ -121,7 +129,7 @@ const handleConfirmClick = () => {
     </div>
     <div
       v-if="props.allowMutual"
-      class="mt-4 flex"
+      class="mt-4 flex justify-between"
     >
       <div
         class="mr-2 flex shrink-0 items-center px-2 text-primary active:text-neutral-400"
@@ -135,11 +143,10 @@ const handleConfirmClick = () => {
       </div>
       <Button
         type="primary"
-        block
         round
         @click="handleConfirmClick"
       >
-        确认
+        &nbsp;&nbsp;&nbsp;&nbsp;确认&nbsp;&nbsp;&nbsp;&nbsp;
       </Button>
     </div>
   </div>

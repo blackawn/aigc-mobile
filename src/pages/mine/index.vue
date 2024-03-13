@@ -147,7 +147,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="mt-6 grid grid-cols-2 space-x-3">
+        <div class="mt-6 grid grid-cols-2 gap-x-3">
           <div class="flex-1 items-center rounded-2xl bg-white p-3.5 active:bg-neutral-200">
             <div class="flex items-center">
               <span class="font-bold">购买套餐</span>

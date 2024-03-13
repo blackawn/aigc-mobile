@@ -1,12 +1,28 @@
 import { h } from 'vue'
-import { showDialog, closeDialog, type DialogOptions, Button } from 'vant'
+import { showDialog, closeDialog, setDialogDefaultOptions,resetDialogDefaultOptions, type DialogOptions, Button } from 'vant'
 
-interface DialogEvent {
+type ButtonDirection = 'horizontal' | 'vertical'
+
+interface DialogProps {
   onConfirm?: () => void
+  confirmText?: string
+  onCancel?: () => void
+  cancelText?: string
+  buttonDirection?: ButtonDirection
+  onOpen?: () => void
 }
 
 export const useBaseDialog = () => {
-  const openDialog = (opt: DialogOptions & DialogEvent) => {
+
+  const openDialog = (opt: DialogOptions & DialogProps) => {
+
+    opt.onOpen && opt.onOpen()
+
+    const buttonDirection = opt.buttonDirection || 'horizontal'
+
+    const message = typeof opt.message === 'function' ? h(opt.message) : h('div', {
+      class: 'text-base'
+    }, opt.message)
 
     const title = opt.title || '提示'
 
@@ -18,30 +34,32 @@ export const useBaseDialog = () => {
       message: () => h('div', {
         class: 'flex flex-col'
       }, [
+        message,
         h('div', {
-          class: 'text-base'
-        }, opt.message),
-        h('div', {
-          class: 'flex flex-col space-y-1 mt-6'
+          class: `flex mt-6 ${buttonDirection === 'horizontal' ? 'gap-x-3 px-4 flex-row-reverse' : 'flex-col px-8 gap-y-3'}`
         }, [h(Button, {
           block: true,
           round: true,
           type: 'primary',
           class: 'text-base !bg-[#165DFF]',
           'onClick': () => (opt.onConfirm && opt.onConfirm()) || closeDialog()
-        }, () => '确定'),
+        }, () => (opt.confirmText || '确定')),
         h(Button, {
           block: true,
           round: true,
           type: 'default',
-          class: 'text-base !border-none !text-neutral-500',
-          'onClick': () => closeDialog()
-        }, () => '取消')])
+          class: 'text-base !border-none !text-neutral-500 !bg-neutral-50',
+          'onClick': () => (opt.onCancel && opt.onCancel()) || closeDialog()
+        }, () => (opt.cancelText || '取消'))])
       ])
     })
+    
   }
+  
   return {
     openDialog,
-    closeDialog
+    closeDialog,
+    setDialogDefaultOptions,
+    resetDialogDefaultOptions
   }
 }
