@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { ref, withDefaults } from 'vue'
-import { DialogType } from './types'
-import { Button,ButtonProps } from 'vant'
-import { isEmpty } from 'lodash'
+import { withDefaults } from 'vue'
+import { DialogData } from './types'
 
 export interface ChatDialogProps {
-  data?: DialogType
-  buttonProps?: Partial<ButtonProps>
+  data?: DialogData
 }
 
 const props = withDefaults(defineProps<ChatDialogProps>(), {
@@ -18,14 +15,10 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
   })
 })
 
-const emit = defineEmits<{
-  (e: 'button', value: string): void
-}>()
-
 </script>
 <template>
   <div
-    class="w-max max-w-[80vw] rounded-md p-2.5"
+    class="w-max max-w-[80vw] rounded-md p-3"
     :class="{
       'bg-white': props.data.role === 'gpt',
       'self-end bg-primary/10': props.data.role === 'user',
@@ -33,25 +26,10 @@ const emit = defineEmits<{
   >
     <div
       class="text-justify text-sm"
-      v-html="props.data.content"
-    />
-    <div
-      v-if="!isEmpty(props.data.mutual)"
-      class="mt-2 flex flex-wrap gap-1"
     >
-      <div
-        v-for="item in props.data.mutual?.buttonList"
-        :key="item"
-      >
-        <Button
-          v-bind="props.buttonProps"
-          size="small"
-          @click="emit('button', item)"
-        >
-          {{ item }}
-        </Button>
-      </div>
+      {{ props.data.content }}
     </div>
+    <slot />
   </div>
 </template>
 <style></style>

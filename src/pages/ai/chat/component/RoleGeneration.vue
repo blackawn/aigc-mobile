@@ -6,26 +6,19 @@ import { gsap } from 'gsap'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import RoleFeature from './RoleFeature.vue'
 import { nanoid } from 'nanoid'
-
-interface RoleType {
-  id: string
-  name: string
-  sex: '0' | '1' // '0' 男性 | '1' 女性
-  age: '0' | '1' | '2' | '3' // '0' 儿童 | '1' 青少年 | '2' 中年 | '3' 老年
-  feature: Array<string>
-}
+import { RoleStyleInfoData } from './types'
 
 const { openDialog } = useBaseDialog()
 
-const defaultRole: RoleType = {
+const defaultRole: RoleStyleInfoData = {
   id: nanoid(10),
   name: '',
   sex: '0',
   age: '1',
-  feature: []
+  character: []
 }
 
-const roleListData = ref<Array<RoleType>>([{ ...defaultRole }])
+const roleListData = ref<Array<RoleStyleInfoData>>([{ ...defaultRole }])
 
 const handleAddFeatureClick = (index: number) => {
 
@@ -48,7 +41,7 @@ const handleAddFeatureClick = (index: number) => {
 }
 
 const handleRemoveFeatureClick = (index: number, value: string) => {
-  const featureIndex = roleListData.value[index].feature.findIndex(item => item === value)
+  const featureIndex = roleListData.value[index].feature.findIndex((item: string) => item === value)
   if (featureIndex !== -1) {
     roleListData.value[index].feature.splice(featureIndex, 1)
   }
@@ -101,9 +94,9 @@ const onTagLeave = (el: Element, done: () => void) => {
 
 </script>
 <template>
-  <div class="rounded-md bg-white p-2.5 shadow-sm">
-    <div class="mb-3 mt-1">
-      <span class="text-orange-500">好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"</span>
+  <div class="rounded-md bg-white p-3 text-sm shadow-sm">
+    <div class="mb-2">
+      <span>好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"</span>
     </div>
     <div class="flex flex-col gap-y-4">
       <TransitionGroup
@@ -219,7 +212,7 @@ const onTagLeave = (el: Element, done: () => void) => {
       </TransitionGroup>
     </div>
     <div>
-      <div class="mt-4 flex justify-between">
+      <div class="mt-3 flex justify-between">
         <div
           class="mr-2 flex shrink-0 items-center   px-2 text-primary active:text-neutral-400"
           @click="handleAddNewRoleClick"

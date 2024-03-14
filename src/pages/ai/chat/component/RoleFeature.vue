@@ -4,13 +4,13 @@ import { Tab, Tabs, Button, Field, Tag } from 'vant'
 import { Icon } from '@iconify/vue'
 import { reactive } from 'vue'
 
-interface RoleFeatureType {
+interface RoleFeatureData {
   figure: Array<string>
   disposition: Array<string>
   customize: Array<string>
 }
 
-const roleFeatureData = reactive<RoleFeatureType>({
+const roleFeatureData = reactive<RoleFeatureData>({
   figure: ['正太', '萝莉', '美少女', '美少男', '辣妹', '大小姐', '胖子', '伪娘', '御姐', '大叔', '剑客', '道士', '富豪', '侦探', '学生'],
   disposition: ['乐观豁达', '刚毅坚强', '聪明机智', '笨拙可爱', '善良仁慈', '冷漠孤傲', '勇敢无畏', '狡诈多疑', '狂妄自大', '心机深沉'],
   customize: []

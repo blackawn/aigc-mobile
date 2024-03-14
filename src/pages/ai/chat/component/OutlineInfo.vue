@@ -16,9 +16,9 @@ const handleModifyOutlineInfoClick = () => {
 
 </script>
 <template>
-  <div class="rounded-md bg-white p-2.5 shadow-sm">
-    <div class="mb-2 mt-1">
-      <span class="text-orange-500">好的！根据我们之前的对话，汇总得到以下：</span>
+  <div class="rounded-md bg-white p-2.5 text-sm shadow-sm">
+    <div class="mb-2">
+      <span>好的！根据我们之前的对话，汇总得到以下：</span>
     </div>
     <div class="mt-0.5 flex flex-col gap-y-2">
       <div class="text-justify">
@@ -40,12 +40,12 @@ const handleModifyOutlineInfoClick = () => {
       </div>
     </div>
     <div class="mt-3 flex items-center justify-between">
-      <span class="text-orange-500">是否确定生成小说大纲？</span>
+      <span class="text-pink-500">是否确定生成小说大纲？</span>
       <div class="flex items-center gap-x-2">
         <Button
           size="small"
           round
-          type="primary"
+          type="default"
           @click="handleModifyOutlineInfoClick"
         >
           &nbsp;&nbsp;&nbsp;修改&nbsp;&nbsp;&nbsp;
@@ -53,7 +53,7 @@ const handleModifyOutlineInfoClick = () => {
         <Button
           size="small"
           round
-          type="success"
+          type="primary"
         >
           &nbsp;&nbsp;&nbsp;生成&nbsp;&nbsp;&nbsp;
         </Button>

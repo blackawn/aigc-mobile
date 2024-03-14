@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Form, Field } from 'vant'
-import type { BackgroundType } from './BackgroundGeneration.vue'
 
-interface BackgroundSettingProps {
-  data?: BackgroundType
+export interface BackgroundSettingData {
+  title: string
+  time: string
+  address: string
+  background: string
+}
+
+export interface BackgroundSettingProps {
+  data?: BackgroundSettingData
 }
 
 const props = withDefaults(defineProps<BackgroundSettingProps>(), {
@@ -16,7 +22,7 @@ const props = withDefaults(defineProps<BackgroundSettingProps>(), {
   })
 })
 
-const backgroundSettingData = ref<BackgroundType>({...props.data})
+const backgroundSettingData = ref<BackgroundSettingData>({...props.data})
 
 defineExpose({
   backgroundSettingData

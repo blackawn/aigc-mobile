@@ -1,6 +1,6 @@
-export type Role = 'gpt' | 'user'
+export type DialogRole = 'gpt' | 'user'
 
-export type Type = 'theme' |
+export type DialogType = 'theme' |
   'background' |
   'backgroundGeneration' |
   'backgroundAnswer' |
@@ -10,33 +10,28 @@ export type Type = 'theme' |
   'writingStyle' |
   'summary'
 
-// 0 按钮交互
-export type MutualType = 0 | 1
-
-export interface RoleStyleInfo {
+export interface RoleStyleInfoData {
   name: string
   age: string
   sex: string
-  character: string
+  character: string | []
+  [key: string]: any
 }
 
-export interface Summary {
+export interface SummaryData {
   title: string
-  id: Type
+  id: DialogType
   content: string
+  [key: string]: any
 }
 
-export interface DialogType {
-  role: Role
+export interface DialogData {
+  role: DialogRole
   content: string
-  type: Type
+  type: DialogType
   time: string
-  mutual?: {
-    type: MutualType
-    buttonList?: Array<string>
-  }
-  roleStyleInfo?: Array<RoleStyleInfo>
+  roleStyleInfo?: Array<RoleStyleInfoData>
   outline?: boolean
-  summaryList?: Array<Summary>
+  summaryList?: Array<SummaryData>
   [key: string]: any
 }

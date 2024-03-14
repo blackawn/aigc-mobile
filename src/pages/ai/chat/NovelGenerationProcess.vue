@@ -1,26 +1,25 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { DialogType } from './component/types'
+import type { DialogData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
-import BackgroundGeneration, { BackgroundType } from './component/BackgroundGeneration.vue'
+import ChatInfoMutual from './component/ChatInfoMutual.vue'
+import BackgroundGeneration from './component/BackgroundGeneration.vue'
 import RoleGeneration from './component/RoleGeneration.vue'
 import OutlineInfo from './component/OutlineInfo.vue'
-import { watch } from 'vue'
 import { watchEffect } from 'vue'
 
 interface NovelGenerationProcessDialogProps {
-  data?: Array<DialogType>
+  data?: Array<DialogData>
 }
 
 const props = withDefaults(defineProps<NovelGenerationProcessDialogProps>(), {
   data: () => []
 })
 
-const novelGenerationProcessDialogData = ref<Array<DialogType>>(props.data)
+const novelGenerationProcessDialogData = ref<Array<DialogData>>(props.data)
 
-
-watchEffect(()=>{
+watchEffect(() => {
   novelGenerationProcessDialogData.value = props.data
 })
 
@@ -31,8 +30,12 @@ watchEffect(()=>{
       v-for="(dialog, i) in novelGenerationProcessDialogData"
       :key="i"
     >
+      <ChatInfoMutual
+        v-if="(['theme', 'background', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type) && dialog.role === 'gpt')"
+        :data="dialog"
+      />
       <ChatInfo
-        v-if="(['theme', 'background', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type))"
+        v-else-if="(['theme', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type))"
         :data="dialog"
       />
       <BackgroundGeneration

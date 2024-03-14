@@ -1,32 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, h, PropType } from 'vue'
-import { Button, showToast,Field } from 'vant'
+import { computed, ref, h } from 'vue'
+import { Button } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import BackgroundSetting from './BackgroundSetting.vue'
+import BackgroundSetting, { type BackgroundSettingData } from './BackgroundSetting.vue'
 import { Icon } from '@iconify/vue'
 import { onMounted } from 'vue'
 
-interface BackgroundCardProps {
-  data: string
-  allowMutual: boolean
+export interface BackgroundGenerationProps {
+  data?: string
+  allowMutual?: boolean
 }
 
-export interface BackgroundType {
-  title: string
-  time: string
-  address: string
-  background: string
-}
-
-const props = withDefaults(defineProps<BackgroundCardProps>(), {
+const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
   data: '',
-  allowMutual: false
+  allowMutual: true
 })
 
 const emit = defineEmits<{
   (e: 'backgroundSelect'): void
   (e: 'afresh'): void
-  (e: 'confirm', data: BackgroundType): void
+  (e: 'confirm', data: BackgroundSettingData): void
 }>()
 
 const { openDialog, closeDialog } = useBaseDialog()
@@ -43,7 +36,7 @@ const selectBackground = (index: number) => {
   emit('backgroundSelect')
 }
 
-const backgroundList = computed<Array<BackgroundType>>(() => {
+const backgroundList = computed<Array<BackgroundSettingData>>(() => {
 
   let storiesArray = []
 
@@ -90,7 +83,7 @@ const handleConfirmClick = () => {
     }),
 
     onConfirm() {
-      emit('confirm', (backgroundSettingInst.value?.backgroundSettingData as BackgroundType))
+      emit('confirm', (backgroundSettingInst.value?.backgroundSettingData as BackgroundSettingData))
     }
   })
 
@@ -98,15 +91,15 @@ const handleConfirmClick = () => {
 
 </script>
 <template>
-  <div class="rounded-md bg-white p-2.5 shadow-sm">
-    <div class="mb-3 mt-1">
-      <span class="text-orange-500">你想选择以下哪个片段作为小说的背景？</span>
+  <div class="rounded-md bg-white p-3 text-sm shadow-sm">
+    <div class="mb-2">
+      <span>你想选择以下哪个片段作为小说的背景？</span>
     </div>
     <div class="flex flex-col gap-y-2">
       <div
         v-for="(item, index) in backgroundList"
         :key="item.title"
-        class="rounded bg-neutral-100 p-2"
+        class="rounded bg-neutral-100 p-2 text-sm"
         :class="{
           'outline outline-primary': (selected === index)
         }"
@@ -115,7 +108,7 @@ const handleConfirmClick = () => {
         <div>
           <span>{{ item.title }}</span>
         </div>
-        <div class="mt-0.5 text-sm">
+        <div class="mt-0.5">
           <div>
             <span>时间:&nbsp;</span><span>{{ item.time }}</span>
           </div>
@@ -130,7 +123,7 @@ const handleConfirmClick = () => {
     </div>
     <div
       v-if="props.allowMutual"
-      class="mt-4 flex justify-between"
+      class="mt-3 flex justify-between"
     >
       <div
         class="mr-2 flex shrink-0 items-center px-2 text-primary active:text-neutral-400"
