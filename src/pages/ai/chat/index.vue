@@ -44,6 +44,24 @@ const novelGenerationProcessData = ref<NovelGenerationProcess>({
 const initNovelGenerationProcess = () => {
   novelGenerationProcessData.value.dialog.push({
     role: 'gtp',
+    content: '你好,我是专门为作者提供创作帮助的AI助手,您可以选择以下辅助模块辅助创作',
+    time: '',
+    type: 'theme',
+    mutual: {
+      type: 0,
+      buttonList: ['小说生成', '小说续写', '小说扩写']
+    }
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '小说生成',
+    time: '',
+    type: 'theme'
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'gtp',
     content: '嗨！我是专门为作者提供创作帮助的AI助手，我具备强大的理解和生成能力，可以为作者提供创意灵感、角色设定、情节发展等方面的建议。我可以与作者进行对话，帮助他们解决问题，充实情节，提升故事的吸引力。</br></br> 无论你是需要构思情节，塑造角色，还是需要一些创意技巧，我都会尽力帮助你。请告诉我你想写什么题材的小说？',
     time: '',
     type: 'theme',
