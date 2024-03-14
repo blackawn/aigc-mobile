@@ -11,7 +11,7 @@ export interface ChatDialogProps {
 
 const props = withDefaults(defineProps<ChatDialogProps>(), {
   data: () => ({
-    role: 'gtp',
+    role: 'gpt',
     content: '',
     time: '',
     type: 'theme'
@@ -27,7 +27,7 @@ const emit = defineEmits<{
   <div
     class="w-max max-w-[80vw] rounded-md p-2.5"
     :class="{
-      'bg-white': props.data.role === 'gtp',
+      'bg-white': props.data.role === 'gpt',
       'self-end bg-primary/10': props.data.role === 'user',
     }"
   >
