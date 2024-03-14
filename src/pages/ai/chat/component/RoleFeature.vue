@@ -35,12 +35,25 @@ const handleSelectClick = (value: string) => {
   }
 }
 
-const handleAddCustomizeFeature = () => {
-  roleFeatureData.customize.push(customizeValue.value)
+const handleAddCustomizeFeatureClick = () => {
+
+  if (!customizeValue.value.trim()) return
+
+  roleFeatureData.customize.push(customizeValue.value.trim())
   customizeValue.value = ''
 }
 
-const setSelected = (data: Array<string>)=>{
+const handleCustomizeFeatureClick = (value: string) => {
+  if (mutual.edit) return
+
+  handleSelectClick(value)
+}
+
+const handleRemoveCustomizeFeatureClick = (value: string) => {
+
+}
+
+const setSelected = (data: Array<string>) => {
   selected.value = data
 }
 
@@ -85,47 +98,50 @@ defineExpose({
       <Tab title="自定义">
         <div class="py-3">
           <div>
-            <div class="rounded-md bg-neutral-100/75">
+            <div class="flex items-center gap-x-2">
               <Field
                 v-model="customizeValue"
                 placeholder="请输入特征"
                 autocomplete="off"
                 clearable
-                class="!bg-transparent !px-2 !py-1.5"
+                class="rounded !bg-neutral-100 !px-2.5 !py-1.5"
+                :border="false"
+              />
+
+              <Button
+                size="small"
+                type="success"
+                class="shrink-0"
+                @click="handleAddCustomizeFeatureClick"
               >
-                <template #right-icon>
-                  <div class="flex gap-x-1.5">
-                    <Button
-                      size="small"
-                      type="success"
-                      @click="handleAddCustomizeFeature"
-                    >
-                      添加
-                    </Button>
-                    <Button
-                      size="small"
-                      :type="(mutual.edit ? 'default' : 'warning')"
-                      @click="(mutual.edit = !mutual.edit)"
-                    >
-                      {{ mutual.edit ? '取消' : '编辑' }}
-                    </Button>
-                  </div>
-                </template>
-              </Field>
+                添加
+              </Button>
+              <Button
+                size="small"
+                class="shrink-0"
+                :type="(mutual.edit ? 'default' : 'warning')"
+                @click="(mutual.edit = !mutual.edit)"
+              >
+                {{ mutual.edit ? '取消' : '编辑' }}
+              </Button>
             </div>
             <div class="mt-4 flex flex-wrap justify-center gap-1">
               <Button
                 v-for="item in roleFeatureData.customize"
                 :key="item"
                 size="small"
+                :class="{
+                  'pointer-events-none': mutual.edit
+                }"
                 :type="(selected.includes(item) ? 'primary' : 'default')"
-                @click="handleSelectClick(item)"
+                @click="handleCustomizeFeatureClick(item)"
               >
                 <div class="flex items-center">
                   <span>{{ item }}</span>
                   <div
                     v-if="mutual.edit"
-                    class="ml-1 rounded-full p-0.5"
+                    class="pointer-events-auto ml-1 rounded-full p-0.5 active:text-red-400"
+                    @click="handleRemoveCustomizeFeatureClick(item)"
                   >
                     <Icon icon="gridicons:cross" />
                   </div>

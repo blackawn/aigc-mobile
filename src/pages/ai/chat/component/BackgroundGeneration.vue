@@ -4,6 +4,7 @@ import { Button, showToast,Field } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundSetting from './BackgroundSetting.vue'
 import { Icon } from '@iconify/vue'
+import { onMounted } from 'vue'
 
 interface BackgroundCardProps {
   data: string
@@ -99,7 +100,7 @@ const handleConfirmClick = () => {
 <template>
   <div class="rounded-md bg-white p-2.5 shadow-sm">
     <div class="mb-3 mt-1">
-      <span class="text-primary">你想选择以下哪个片段作为小说的背景？</span>
+      <span class="text-orange-500">你想选择以下哪个片段作为小说的背景？</span>
     </div>
     <div class="flex flex-col gap-y-2">
       <div
@@ -144,6 +145,7 @@ const handleConfirmClick = () => {
       <Button
         type="primary"
         round
+        size="small"
         @click="handleConfirmClick"
       >
         &nbsp;&nbsp;&nbsp;&nbsp;确认&nbsp;&nbsp;&nbsp;&nbsp;

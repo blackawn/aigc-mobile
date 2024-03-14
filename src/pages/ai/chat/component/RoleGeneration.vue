@@ -103,7 +103,7 @@ const onTagLeave = (el: Element, done: () => void) => {
 <template>
   <div class="rounded-md bg-white p-2.5 shadow-sm">
     <div class="mb-3 mt-1">
-      <span class="text-primary">好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"</span>
+      <span class="text-orange-500">好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"</span>
     </div>
     <div class="flex flex-col gap-y-4">
       <TransitionGroup
@@ -230,6 +230,7 @@ const onTagLeave = (el: Element, done: () => void) => {
         <Button
           type="primary"
           round
+          size="small"
         >
           &nbsp;&nbsp;下一步&nbsp;&nbsp;
         </Button>

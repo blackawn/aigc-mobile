@@ -5,6 +5,7 @@ import { Button } from 'vant'
 import ChatDialog from './component/ChatDialog.vue'
 import BackgroundGeneration, { BackgroundType } from './component/BackgroundGeneration.vue'
 import RoleGeneration from './component/RoleGeneration.vue'
+import OutlineInfo from './component/OutlineInfo.vue'
 import { DialogType } from './component/types'
 import { onMounted } from 'vue'
 import { useEventSource } from '@/composables/useEventSource'
@@ -48,8 +49,74 @@ const initNovelGenerationProcess = () => {
     type: 'theme',
     mutual: {
       type: 0,
-      buttonList: ['玄幻仙侠', '言情甜宠', '武侠古典', '奇幻异世', '悬疑推理', '科幻未来', '都市生活', '古诗古文', '随机盲盒']
+      buttonList: ['玄幻仙侠', '言情甜宠', '武侠古典', '奇幻异世', '悬疑推理', '科幻未来', '都市生活', '古诗古文']
     }
+  })
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '武侠古典',
+    time: '',
+    type: 'theme'
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'gtp',
+    content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+    time: '',
+    type: 'theme'
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '科幻未来',
+    time: '',
+    type: 'theme'
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'gtp',
+    content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+    time: '',
+    type: 'theme'
+  })
+
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '在50年后的大地上充满了科幻的气息',
+    time: '',
+    type: 'theme'
+  })
+  novelGenerationProcessData.value.dialog.push({
+    role: 'gtp',
+    content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
+    time: '',
+    type: 'theme',
+    mutual: {
+      type: 0,
+      buttonList: ['轻取珍宝', '谈笑风生', '隐藏身份', '舍生取义', '巧用技能', '巧解危机', '邪道能力', '古怪伙伴', '王道信念','转危为机','严肃搞笑','赢人一点','女神暗恋','劫富济贫']
+    }
+  })
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '巧用技能',
+    time: '',
+    type: 'theme'
+  })
+  novelGenerationProcessData.value.dialog.push({
+    role: 'gtp',
+    content: '选择您想要的文风',
+    time: '',
+    type: 'theme',
+    mutual: {
+      type: 0,
+      buttonList: ['鲁迅风', '红楼风', '轻小说风', '古文小说风', '金庸武侠风', '马克吐温幽默风', '夏目漱石心理风', '海明威简明严肃风']
+    }
+  })
+  novelGenerationProcessData.value.dialog.push({
+    role: 'user',
+    content: '古文小说风',
+    time: '',
+    type: 'theme'
   })
 }
 
@@ -99,7 +166,7 @@ const scrollElToBottom = () => {
 }
 
 // 生成背景
-const handleGenerationBackground = () => {
+const generationBackground = () => {
 
   background.connected = true
 
@@ -129,7 +196,7 @@ const handleConfirmBackground = (data: BackgroundType) => {
 }
 
 // 用户输入
-const handleUserInputSend = async () => {
+const handleSendClick = async () => {
   novelGenerationProcessData.value.dialog.push({
     role: 'user',
     content: userInput.value,
@@ -137,7 +204,7 @@ const handleUserInputSend = async () => {
     type: 'theme'
   })
 
-  handleGenerationBackground()
+  generationBackground()
 
   userInput.value = ''
 
@@ -153,6 +220,33 @@ watchEffect(() => {
 
 onMounted(() => {
   initNovelGenerationProcess()
+
+  const a = `故事背景1：
+时间：先史纪元的晚期
+地点：艾瑟兰达大陆，北侧的瑟利安森林边缘
+背景：巨龙的凋零、古老魔法的消失、贵族之争、森林里的秘密种族
+
+故事背景2：
+时间：第五纪元的晨光年
+地点：艾娜希尔大陆，西部的审判之地
+背景：新星陨落、亡灵觉醒、骑士团的荣耀、被遗忘的魔法神殿
+
+故事背景3：
+时间：两派大战后的百年和平时期
+地点：尼亚索斯世界，中心的辉煌帝国首都格兰塞尔
+背景：魔力的稀释、双子王朝、独立商盟的兴起、远古巨兽的苏醒
+
+故事背景4：
+时间：幻梦元年，不可知时代的始点
+地点：梦回大地，神秘岛屿群落尤特拉帕斯
+背景：未知天象、幻梦者的到来、智者隐居地、种族之树与遗产守护者
+
+故事背景5：
+时间：镜界之争后的第一世纪
+地点：德鲁安塔大陆，南端的风暴裂谷
+背景：时空裂缝、流放者联盟、古尔文领主家族的崛起、散落的水晶碎片兽`
+
+  background.content = a
 })
 
 </script>
@@ -174,13 +268,13 @@ onMounted(() => {
             @button="v => themeSelect(v)"
           />
           <BackgroundGeneration
-            
             :data="background.content"
             :allow-mutual="(!background.connected)"
-            @afresh="handleGenerationBackground"
+            @afresh="generationBackground"
             @confirm="handleConfirmBackground"
           />
           <RoleGeneration />
+          <OutlineInfo />
         </div>
       </div>
     </div>
@@ -213,7 +307,7 @@ onMounted(() => {
       </div>
       <div
         class="flex px-4 py-1.5 active:text-neutral-400"
-        @click="handleUserInputSend"
+        @click="handleSendClick"
       >
         <Icon
           icon="streamline:send-email"
