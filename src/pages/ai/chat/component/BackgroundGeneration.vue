@@ -3,6 +3,7 @@ import { computed, ref, h, onMounted } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundSetting, { type BackgroundSettingData } from './BackgroundSetting.vue'
+import { isEmpty } from 'lodash'
 import { Icon } from '@iconify/vue'
 
 export interface BackgroundGenerationProps {
@@ -23,11 +24,13 @@ const emit = defineEmits<{
 
 const { openDialog, closeDialog } = useBaseDialog()
 
+const tempElemRef = ref<HTMLDivElement | null>(null)
+
 const selected = ref(-1)
 
 const backgroundSettingInst = ref<InstanceType<typeof BackgroundSetting> | null>(null)
 
-const selectBackground = (index: number) => {
+const handleSelectBackgroundClick = (index: number) => {
 
   if (!props.allowMutual) return
 
@@ -88,6 +91,10 @@ const handleConfirmClick = () => {
 
 }
 
+defineExpose({
+  tempRef: tempElemRef
+})
+
 </script>
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
@@ -102,7 +109,7 @@ const handleConfirmClick = () => {
         :class="{
           'outline outline-primary': (selected === index)
         }"
-        @click="selectBackground(index)"
+        @click="handleSelectBackgroundClick(index)"
       >
         <div>
           <span>{{ item.title }}</span>
@@ -120,6 +127,10 @@ const handleConfirmClick = () => {
         </div>
       </div>
     </div>
+    <div
+      ref="tempElemRef"
+      class="whitespace-pre-wrap text-justify text-sm"
+    />
     <div
       v-if="props.allowMutual"
       class="mt-3 flex justify-between"

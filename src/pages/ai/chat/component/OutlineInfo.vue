@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { ref, h, watchEffect } from 'vue'
 import { Button } from 'vant'
-import { Icon } from '@iconify/vue'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineInfoModify from './OutlineInfoModify.vue'
 import type { SummaryData } from './types'
 
 interface OutlineInfoProps {
   data?: Array<SummaryData>
+  allowMutual?: boolean
 }
 
 const props = withDefaults(defineProps<OutlineInfoProps>(), {
-  data: () => []
+  data: () => [],
+  allowMutual: false
 })
+
+const emit = defineEmits<{
+  (e: 'confirm'): void
+}>()
 
 const { openDialog } = useBaseDialog()
 
@@ -25,7 +30,11 @@ const handleModifyOutlineInfoClick = () => {
   })
 }
 
-watchEffect(()=>{
+const handleConfirmOutlineInfoClick = () => {
+  emit('confirm')
+}
+
+watchEffect(() => {
   outlineInfoListData.value = props.data
 })
 
@@ -44,7 +53,10 @@ watchEffect(()=>{
         <span>{{ item.title }}:&nbsp;</span><span class="rounded bg-neutral-200 px-1">{{ item.content }}</span>
       </div>
     </div>
-    <div class="mt-3 flex items-center justify-between">
+    <div
+      v-if="props.allowMutual"
+      class="mt-3 flex items-center justify-between"
+    >
       <span class="text-pink-500">是否确定生成小说大纲？</span>
       <div class="flex items-center gap-x-2">
         <Button
@@ -59,6 +71,7 @@ watchEffect(()=>{
           size="small"
           round
           type="primary"
+          @click="handleConfirmOutlineInfoClick"
         >
           &nbsp;&nbsp;&nbsp;生成&nbsp;&nbsp;&nbsp;
         </Button>

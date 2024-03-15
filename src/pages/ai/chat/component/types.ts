@@ -11,7 +11,8 @@ export type DialogType =
   'plot' |
   'style' |
   'writingStyle' |
-  'summary'
+  'summary' |
+  'outlineGeneration' 
 
 type RoleStyleInfoAge = '儿童' | '青少年' | '中年' | '老年'
 type RoleStyleInfoSex = '男' | '女'
