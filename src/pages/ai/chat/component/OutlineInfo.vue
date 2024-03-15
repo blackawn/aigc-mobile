@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { ref, h } from 'vue'
+import { ref, h, watchEffect } from 'vue'
 import { Button } from 'vant'
 import { Icon } from '@iconify/vue'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineInfoModify from './OutlineInfoModify.vue'
+import type { SummaryData } from './types'
+
+interface OutlineInfoProps {
+  data?: Array<SummaryData>
+}
+
+const props = withDefaults(defineProps<OutlineInfoProps>(), {
+  data: () => []
+})
 
 const { openDialog } = useBaseDialog()
+
+const outlineInfoListData = ref<Array<SummaryData>>(props.data)
 
 const handleModifyOutlineInfoClick = () => {
   openDialog({
@@ -14,6 +25,10 @@ const handleModifyOutlineInfoClick = () => {
   })
 }
 
+watchEffect(()=>{
+  outlineInfoListData.value = props.data
+})
+
 </script>
 <template>
   <div class="rounded-md bg-white p-2.5 text-sm shadow-sm">
@@ -21,22 +36,12 @@ const handleModifyOutlineInfoClick = () => {
       <span>好的！根据我们之前的对话，汇总得到以下：</span>
     </div>
     <div class="mt-0.5 flex flex-col gap-y-2">
-      <div class="text-justify">
-        <span>小说题材:&nbsp;</span><span class="rounded bg-neutral-200 px-1">武侠古典</span>
-      </div>
-      <div class="text-justify">
-        <span>背景设定:&nbsp;</span><span
-          class="rounded bg-neutral-200 px-1"
-        >时间：两派大战后的百年和平时期；地点：尼亚索斯世界，中心的辉煌帝国首都格兰塞尔；背景：魔力的稀释、双子王子王子王</span>
-      </div>
-      <div class="text-justify">
-        <span>角色:&nbsp;</span><span class="rounded bg-neutral-200 px-1">姓名：张力；性别：男；年龄：青少年；角色特征：聪明机智；</span>
-      </div>
-      <div class="text-justify">
-        <span>情节:&nbsp;</span><span class="rounded bg-neutral-200 px-1">舍生取义,巧用技能,邪道能力</span>
-      </div>
-      <div class="text-justify">
-        <span>文风:&nbsp;</span><span class="rounded bg-neutral-200 px-1">马克吐温幽默风</span>
+      <div
+        v-for="(item, index) in outlineInfoListData"
+        :key="index"
+        class="text-justify"
+      >
+        <span>{{ item.title }}:&nbsp;</span><span class="rounded bg-neutral-200 px-1">{{ item.content }}</span>
       </div>
     </div>
     <div class="mt-3 flex items-center justify-between">

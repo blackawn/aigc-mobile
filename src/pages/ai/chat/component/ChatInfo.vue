@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
     }"
   >
     <div
-      class="text-justify text-sm"
+      class="whitespace-pre-wrap text-justify text-sm"
     >
       {{ props.data.content }}
     </div>

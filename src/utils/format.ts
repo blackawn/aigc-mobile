@@ -42,3 +42,49 @@ export function insertString(value: string | number | undefined, startIndex: num
 
   return `${firstPart}${pad}${secondPart}`
 }
+
+/**
+ * 时间格式化
+ * @param {*} isTime 时间戳
+ * @param {*} cFormat 需要转换的格式
+ * @returns String
+ */
+export const parseTime = (isTime?: number | Date, cFormat?: string): string => {
+  let time: number = isTime ? (typeof isTime === 'number' ? isTime : isTime.getTime()) : new Date().getTime()
+  const format: string = cFormat || '{y}/{m}/{d} {h}:{i}:{s}'
+  let date: Date
+
+  if (typeof time === 'object') {
+    date = time as Date
+  } else {
+    if (('' + time).length === 10) time = parseInt(time as any) * 1000
+    date = new Date(time)
+  }
+
+  const formatObj: Record<string, number> = {
+    y: date.getFullYear(),
+    m: date.getMonth() + 1,
+    d: date.getDate(),
+    h: date.getHours(),
+    i: date.getMinutes(),
+    s: date.getSeconds(),
+    a: date.getDay()
+  }
+
+  const timeStr: string = format.replace(/{(y|m|d|h|i|s|a)+}/g, (match: string, key: string) => {
+    let value: number | string = formatObj[key]
+
+    // Note: getDay() returns 0 on Sunday
+    if (key === 'a') {
+      return ['日', '一', '二', '三', '四', '五', '六'][value]
+    }
+
+    if (match.length > 0 && value < 10) {
+      value = '0' + value
+    }
+
+    return value.toString() || '0'
+  })
+
+  return timeStr
+}

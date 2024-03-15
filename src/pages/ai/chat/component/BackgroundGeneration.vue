@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, h } from 'vue'
-import { Button } from 'vant'
+import { computed, ref, h, onMounted } from 'vue'
+import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundSetting, { type BackgroundSettingData } from './BackgroundSetting.vue'
 import { Icon } from '@iconify/vue'
-import { onMounted } from 'vue'
 
 export interface BackgroundGenerationProps {
   data?: string
@@ -13,13 +12,13 @@ export interface BackgroundGenerationProps {
 
 const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
   data: '',
-  allowMutual: true
+  allowMutual: false
 })
 
 const emit = defineEmits<{
   (e: 'backgroundSelect'): void
   (e: 'afresh'): void
-  (e: 'confirm', data: BackgroundSettingData): void
+  (e: 'confirm', content: string): void
 }>()
 
 const { openDialog, closeDialog } = useBaseDialog()
@@ -70,10 +69,10 @@ const handleAfreshClick = () => {
 
 const handleConfirmClick = () => {
 
-  // if (selected.value < 0) {
-  //   showToast('请选择背景!')
-  //   return
-  // }
+  if (selected.value < 0) {
+    showToast('请选择背景!')
+    return
+  }
 
   openDialog({
     title: '背景设定',
@@ -83,7 +82,7 @@ const handleConfirmClick = () => {
     }),
 
     onConfirm() {
-      emit('confirm', (backgroundSettingInst.value?.backgroundSettingData as BackgroundSettingData))
+      emit('confirm', (backgroundSettingInst.value?.content || ''))
     }
   })
 

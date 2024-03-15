@@ -23,10 +23,11 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'button', value: string): void
+  (e: 'button', data: Pick<DialogData, 'type' | 'content'>): void
 }>()
 
 const mutualButtonMap: MutualButtonMap = {
+  introduction: ['小说生成', '小说续写', '小说扩写'],
   theme: ['玄幻仙侠', '言情甜宠', '武侠古典', '奇幻异世', '悬疑推理', '科幻未来', '都市生活', '古诗古文'],
   plot: ['轻取珍宝', '谈笑风生', '隐藏身份', '舍生取义', '巧用技能', '巧解危机', '邪道能力', '古怪伙伴', '王道信念', '转危为机', '严肃搞笑', '赢人一点', '女神暗恋', '劫富济贫'],
   writingStyle: ['鲁迅风', '红楼风', '轻小说风', '古文小说风', '金庸武侠风', '马克吐温幽默风', '夏目漱石心理风', '海明威简明严肃风']
@@ -46,7 +47,10 @@ const mutualButtonMap: MutualButtonMap = {
         <Button
           v-bind="props.buttonProps"
           size="small"
-          @click="emit('button', item)"
+          @click="emit('button', {
+            type: props.data.type,
+            content: item
+          })"
         >
           {{ item }}
         </Button>

@@ -1,24 +1,41 @@
 <script setup lang="ts">
 import { ref, h, watch, nextTick } from 'vue'
-import { Form, Field, RadioGroup, Radio, Tag, Button } from 'vant'
+import { Form, Field, RadioGroup, Radio, Tag, Button, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { gsap } from 'gsap'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import RoleFeature from './RoleFeature.vue'
 import { nanoid } from 'nanoid'
+import { isEmpty, isString } from 'lodash'
 import { RoleStyleInfoData } from './types'
+import { watchEffect } from 'vue'
+
+interface RoleGenerationProps {
+  data?: Array<RoleStyleInfoData>
+  allowMutual?: boolean
+}
+
+const emit = defineEmits<{
+  (e: 'add'): void
+  (e: 'next', data: Array<RoleStyleInfoData>): void
+}>()
 
 const { openDialog } = useBaseDialog()
 
 const defaultRole: RoleStyleInfoData = {
   id: nanoid(10),
   name: '',
-  sex: '0',
-  age: '1',
+  sex: '男',
+  age: '青少年',
   character: []
 }
 
-const roleListData = ref<Array<RoleStyleInfoData>>([{ ...defaultRole }])
+const props = withDefaults(defineProps<RoleGenerationProps>(), {
+  data: () => [],
+  allowMutual: false
+})
+
+const roleListData = ref<Array<RoleStyleInfoData>>(props.data)
 
 const handleAddFeatureClick = (index: number) => {
 
@@ -30,33 +47,68 @@ const handleAddFeatureClick = (index: number) => {
       ref: roleFeatureInst
     }),
     onConfirm() {
-      roleListData.value[index].feature = roleFeatureInst.value?.selected || ['']
+      roleListData.value[index].character = roleFeatureInst.value?.selected || ['']
     }
   })
 
   nextTick(() => {
-    roleFeatureInst.value?.setSelected([...roleListData.value[index].feature])
+    roleFeatureInst.value?.setSelected([...roleListData.value[index].character])
   })
 
 }
 
 const handleRemoveFeatureClick = (index: number, value: string) => {
-  const featureIndex = roleListData.value[index].feature.findIndex((item: string) => item === value)
+  const featureIndex = (roleListData.value[index].character as Array<string>).findIndex((item: string) => item === value)
   if (featureIndex !== -1) {
-    roleListData.value[index].feature.splice(featureIndex, 1)
+    (roleListData.value[index].character as Array<string>).splice(featureIndex, 1)
   }
 }
 
 const handleAddNewRoleClick = () => {
+
+  if (roleListData.value.length >= 5) {
+    showToast('最多添加5个角色!')
+    return
+  }
+
   roleListData.value.push({ ...defaultRole, id: nanoid(10) })
 
-  // watch(() => roleFeatureInst.value?.selected, (n, o) => {
-
-  // }, { immediate: true, deep: true })
+  nextTick(() => {
+    emit('add')
+  })
 }
 
 const handleRemoveRoleClick = (index: number) => {
   roleListData.value.splice(index, 1)
+}
+
+const handleNextClick = () => {
+  const isVacancy = roleListData.value.every((item) => !isEmpty(item.name.trim()) && !isEmpty(item.character))
+
+  if (!isVacancy) {
+    showToast('请填写完整角色信息!')
+    return
+  }
+
+  const formatRoleListData = roleListData.value.map((item) => {
+
+    const { id, ...rest } = item // 使用解构赋值来排除 id 属性
+    return {
+      ...rest,
+      character: (item.character as Array<string>).join(',')
+    }
+
+  })
+
+  emit('next', formatRoleListData)
+}
+
+const formatCharacter = (character: string | Array<string>) => {
+  if (isString(character)) {
+    character = character.split(',')
+  }
+
+  return character
 }
 
 const onBeforeEnter = (el: Element) => {
@@ -92,11 +144,20 @@ const onTagLeave = (el: Element, done: () => void) => {
   })
 }
 
+watchEffect(() => {
+  roleListData.value = props.data.map((item) => {
+    return {
+      ...item,
+      character: formatCharacter(item.character)
+    }
+  })
+})
+
 </script>
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
     <div class="mb-2">
-      <span>好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"</span>
+      <span>好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"。</span>
     </div>
     <div class="flex flex-col gap-y-4">
       <TransitionGroup
@@ -110,7 +171,7 @@ const onTagLeave = (el: Element, done: () => void) => {
           class="relative rounded bg-neutral-100"
         >
           <div
-            v-if="(roleListData.length > 1)"
+            v-if="(roleListData.length > 1 && props.allowMutual)"
             class="absolute -right-1.5 -top-1.5 z-50"
           >
             <div
@@ -124,6 +185,7 @@ const onTagLeave = (el: Element, done: () => void) => {
             :label-width="'3.4em'"
             autocomplete="off"
             class="h-full overflow-hidden p-2"
+            :disabled="!props.allowMutual"
           >
             <Field
               v-model="item.name"
@@ -138,11 +200,12 @@ const onTagLeave = (el: Element, done: () => void) => {
                   v-model="item.sex"
                   direction="horizontal"
                   class="gap-2"
+                  :disabled="!props.allowMutual"
                 >
-                  <Radio name="0">
+                  <Radio name="男">
                     男性
                   </Radio>
-                  <Radio name="1">
+                  <Radio name="女">
                     女性
                   </Radio>
                 </RadioGroup>
@@ -154,17 +217,18 @@ const onTagLeave = (el: Element, done: () => void) => {
                   v-model="item.age"
                   direction="horizontal"
                   class="gap-2"
+                  :disabled="!props.allowMutual"
                 >
-                  <Radio name="0">
+                  <Radio name="儿童">
                     儿童
                   </Radio>
-                  <Radio name="1">
+                  <Radio name="青少年">
                     青少年
                   </Radio>
-                  <Radio name="3">
+                  <Radio name="中年">
                     中年
                   </Radio>
-                  <Radio name="4">
+                  <Radio name="老年">
                     老年
                   </Radio>
                 </RadioGroup>
@@ -182,18 +246,19 @@ const onTagLeave = (el: Element, done: () => void) => {
                     @leave="onTagLeave"
                   >
                     <Tag
-                      v-for="feature in item.feature"
+                      v-for="feature in item.character"
                       :key="feature"
                       type="primary"
                       size="medium"
                       class="overflow-hidden text-nowrap"
-                      closeable
+                      :closeable="props.allowMutual"
                       @close="handleRemoveFeatureClick(index, feature)"
                     >
                       {{ feature }}
                     </Tag>
                   </TransitionGroup>
                   <Tag
+                    v-if="props.allowMutual"
                     type="success"
                     size="medium"
                     plain
@@ -211,23 +276,25 @@ const onTagLeave = (el: Element, done: () => void) => {
         </div>
       </TransitionGroup>
     </div>
-    <div>
-      <div class="mt-3 flex justify-between">
-        <div
-          class="mr-2 flex shrink-0 items-center   px-2 text-primary active:text-neutral-400"
-          @click="handleAddNewRoleClick"
-        >
-          <Icon icon="zondicons:add-outline" />
-          <span class="ml-2 text-sm">添加新角色</span>
-        </div>
-        <Button
-          type="primary"
-          round
-          size="small"
-        >
-          &nbsp;&nbsp;下一步&nbsp;&nbsp;
-        </Button>
+    <div
+      v-if="props.allowMutual"
+      class="mt-3 flex justify-between"
+    >
+      <div
+        class="mr-2 flex shrink-0 items-center   px-2 text-primary active:text-neutral-400"
+        @click="handleAddNewRoleClick"
+      >
+        <Icon icon="zondicons:add-outline" />
+        <span class="ml-2 text-sm">添加新角色</span>
       </div>
+      <Button
+        type="primary"
+        round
+        size="small"
+        @click="handleNextClick"
+      >
+        &nbsp;&nbsp;下一步&nbsp;&nbsp;
+      </Button>
     </div>
   </div>
 </template>

@@ -1,227 +1,352 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { Icon, _api } from '@iconify/vue'
-import NovelGenerationProcess from './NovelGenerationProcess.vue'
-import { DialogData } from './component/types'
-import { onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, watchEffect } from 'vue'
+import { Icon } from '@iconify/vue'
+import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
+import ChatInfo from './component/ChatInfo.vue'
+import ChatInfoMutual from './component/ChatInfoMutual.vue'
+import BackgroundGeneration from './component/BackgroundGeneration.vue'
+import BackgroundGenerationTemp from './component/BackgroundGenerationTemp.vue'
+import RoleGeneration from './component/RoleGeneration.vue'
+import OutlineInfo from './component/OutlineInfo.vue'
 import Api, { CreateNovelParams, CreateNovelBackgroundRes } from '@/api'
-import { watchEffect } from 'vue'
-import { reactive } from 'vue'
 import { EventSourcePolyfill } from 'event-source-polyfill'
+import { parseTime } from '@/utils/format'
+import { nanoid } from 'nanoid'
+import { nextTick } from 'vue'
+import { clearScreenDown } from 'readline'
 
-interface NovelGenerationProcessType {
-  step: number
+enum CreationType {
+  '小说生成' = 1,
+  '小说续写' = 2,
+  '小说扩写' = 3
+}
+
+type ChatDialogType = 0 | CreationType
+
+interface ChatDialogData {
+  step?: number
+  type: ChatDialogType
   dialog: Array<DialogData>
 }
+
+const chatDialogData = ref<ChatDialogData>({
+  step: 0,
+  type: 0,
+  dialog: []
+})
+
+const mutualData = reactive<{
+  novelGeneration: Array<SummaryData>
+}>({
+  novelGeneration: []
+})
 
 const userInput = ref('')
 
 const novelId = ref<number | null>(null)
 
-const delayMutual = ref(false)
-
 const scrollEl = ref<HTMLDivElement | null>(null)
 
-const backgroundInst = ref<EventSource | null>(null)
+/**
+ * backgroundGeneration
+ * */
 
-const background = reactive({
-  content: '',
-  pervGenerationKeyword: '',
-  connected: false
+const bgGenerationTempRef = ref<InstanceType<typeof BackgroundGenerationTemp> | null>(null)
+
+const bgGeneration = reactive<{
+  eventSourceInst: EventSource | null
+  connected: boolean
+  lastKeyword: string
+}>({
+  eventSourceInst: null,
+  connected: false,
+  lastKeyword: '',
 })
 
-const novelGenerationProcessData = ref<NovelGenerationProcessType>({
-  step: 0,
-  dialog: []
-})
+// 生成背景
+const generationBackgroundContent = () => {
 
-
-const init = () => {
-  novelGenerationProcessData.value.dialog = [
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:06',
-      'content': '嗨！我是专门为作者提供创作帮助的AI助手，我具备强大的理解和生成能力，可以为作者提供创意灵感、角色设定、情节发展等方面的建议。我可以与作者进行对话，帮助他们解决问题，充实情节，提升故事的吸引力。\r\n\n无论你是需要构思情节，塑造角色，还是需要一些创意技巧，我都会尽力帮助你。请告诉我你想写什么题材的小说？',
-      'role': 'gpt',
-      'type': 'theme'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:07',
-      'content': '奇幻异世',
-      'role': 'user',
-      'type': 'theme'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:07',
-      'content': '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
-      'role': 'gpt',
-      'type': 'background',
-      'novel_id': 1476
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:16',
-      'content': '奇怪的',
-      'role': 'user',
-      'type': 'backgroundAnswer'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:16',
-      'content': `故事背景1：
-时间：先史纪元的晚期
-地点：艾瑟兰达大陆，北侧的瑟利安森林边缘
-背景：巨龙的凋零、古老魔法的消失、贵族之争、森林里的秘密种族
-
-故事背景2：
-时间：第五纪元的晨光年
-地点：艾娜希尔大陆，西部的审判之地
-背景：新星陨落、亡灵觉醒、骑士团的荣耀、被遗忘的魔法神殿
-
-故事背景3：
-时间：两派大战后的百年和平时期
-地点：尼亚索斯世界，中心的辉煌帝国首都格兰塞尔
-背景：魔力的稀释、双子王朝、独立商盟的兴起、远古巨兽的苏醒
-
-故事背景4：
-时间：幻梦元年，不可知时代的始点
-地点：梦回大地，神秘岛屿群落尤特拉帕斯
-背景：未知天象、幻梦者的到来、智者隐居地、种族之树与遗产守护者
-
-故事背景5：
-时间：镜界之争后的第一世纪
-地点：德鲁安塔大陆，南端的风暴裂谷
-背景：时空裂缝、流放者联盟、古尔文领主家族的崛起、散落的水晶碎片兽`,
-      'role': 'user',
-      'type': 'backgroundGeneration'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:00:51',
-      'content': '好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"',
-      'role': 'gpt',
-      'roleStyleInfo': [
-        {
-          'name': '张力',
-          'age': '青少年',
-          'sex': '男',
-          'character': '聪明机智,'
-        }
-      ],
-      'type': 'role'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:01:03',
-      'content': '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
-      'role': 'gpt',
-      'type': 'plot'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:01:04',
-      'content': '巧用技能',
-      'role': 'user',
-      'type': 'plot'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:01:05',
-      'content': '选择您想要的文风',
-      'role': 'gpt',
-      'type': 'writingStyle'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:01:06',
-      'content': '马克吐温幽默风',
-      'role': 'user',
-      'type': 'writingStyle'
-    },
-    {
-      'avatar': 'icon_avatar',
-      'time': '2024/03/14 12:01:07',
-      'content': '好的！根据我们之前的对话，汇总得到以下',
-      'role': 'gpt',
-      'type': 'summary',
-      'outline': true,
-      'roleStyleInfo': [
-        {
-          'name': '张力',
-          'age': '青少年',
-          'sex': '男',
-          'character': '聪明机智,'
-        }
-      ],
-      'summaryList': [
-        {
-          'title': '小说题材',
-          'id': 'theme',
-          'content': '随机盲盒'
-        },
-        {
-          'title': '背景设定',
-          'id': 'background',
-          'content': '时间：两派大战后的百年和平时期；地点：尼亚索斯世界，中心的辉煌帝国首都格兰塞尔；背景：魔力的稀释、双子王'
-        },
-        {
-          'title': '角色',
-          'id': 'role',
-          'content': '\n姓名：张力；性别：男；年龄：青少年；角色特征：聪明机智；'
-        },
-        {
-          'title': '情节',
-          'id': 'plot',
-          'content': '舍生取义,巧用技能,邪道能力'
-        },
-        {
-          'title': '文风',
-          'id': 'style',
-          'content': '马克吐温幽默风'
-        }
-      ]
-    }
-  ]
-}
-
-// 主题选择
-const themeSelect = async (value: string) => {
-
-  delayMutual.value = true
-
-  // 第一次要选择交互，创建历史记录, 返回id
-  if (!novelId.value) {
-    const res = await Api.novel.createNovel({
-      title: value,
-      type: 1
-    }).finally(() => delayMutual.value = false)
-
-    novelId.value = res.data.novel_id
+  // 清空内容
+  if (bgGenerationTempRef.value?.elRef) {
+    (bgGenerationTempRef.value?.elRef as HTMLDivElement).textContent = ''
   }
 
-  novelGenerationProcessData.value.dialog.push({
-    role: 'user',
-    content: value,
-    time: '',
-    type: 'theme'
+  // 如果存在已生成的背景数据就删除掉
+  if (chatDialogData.value.dialog[chatDialogData.value.dialog.length - 1].type === 'backgroundGeneration') {
+    chatDialogData.value.dialog.pop()
+  }
+
+  if (userInput.value) {
+    bgGeneration.lastKeyword = userInput.value
+  }
+
+  const keyword = userInput.value || bgGeneration.lastKeyword
+
+  bgGeneration.eventSourceInst = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${keyword}`)
+
+  bgGeneration.connected = true
+
+  bgGeneration.eventSourceInst.addEventListener('message', (message) => {
+    // 临时打印生成的内容, 只操作dom
+    (bgGenerationTempRef.value?.elRef as HTMLDivElement).textContent += JSON.parse(message.data).content
+    requestIdleCallback(() => scrollElToBottom())
+  })
+
+  bgGeneration.eventSourceInst.addEventListener('error', () => {
+    // 连接终止时再插入数据渲染组件
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: (bgGenerationTempRef.value?.elRef as HTMLDivElement).textContent || '',
+      role: 'gpt',
+      type: 'backgroundGeneration'
+    })
+
+    bgGeneration.connected = false
+  })
+
+}
+
+// 确认背景
+const handleConfirmBackgroundContentClick = (content: string) => {
+  mutualData.novelGeneration.push({
+    title: '背景设定',
+    id: 'background',
+    content: content
   })
 
   setTimeout(() => {
-
-    novelGenerationProcessData.value.dialog.push({
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: '好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。',
       role: 'gpt',
-      content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
-      time: '',
+      type: 'role',
+      roleStyleInfo: [{
+        id: nanoid(10),
+        name: '',
+        sex: '男',
+        age: '青少年',
+        character: []
+      }]
+    })
+  }, 500)
+
+  chatDialogData.value.step = 3
+}
+
+// 确认角色
+const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
+  let content = ''
+
+  data.forEach((role) => {
+    content += `姓名：${role.name}；性别：${role.sex}；年龄：${role.age}；角色特征：${role.character}；`
+  })
+
+  mutualData.novelGeneration.push({
+    title: '角色',
+    id: 'role',
+    content
+  })
+
+  chatDialogData.value.step = 4
+
+  setTimeout(() => {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
+      role: 'gpt',
+      type: 'plot',
+      roleStyleInfo: [{
+        id: nanoid(10),
+        name: '',
+        sex: '男',
+        age: '青少年',
+        character: []
+      }]
+    })
+  }, 500)
+}
+
+// 用户发送
+const handleSendClick = async () => {
+
+  // 生成背景
+  if (chatDialogData.value.type === 0 && chatDialogData.value.step === 1) {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      content: userInput.value,
+      time: parseTime(),
+      role: 'user',
+      type: 'backgroundAnswer'
+    })
+
+    console.log('开始生成背景')
+
+    setTimeout(() => {
+      generationBackgroundContent()
+      userInput.value = ''
+    }, 500)
+
+    chatDialogData.value.step = 2
+  }
+
+}
+
+// 聊天框按钮交互点击
+const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
+
+  // 功能选择
+  if (data.type === 'introduction') {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: data.content,
+      role: 'user',
+      type: 'introductionAnswer'
+    })
+
+    chatDialogData.value.type = CreationType[data.content as unknown as number] as unknown as ChatDialogType
+
+    chatDialogData.value.step = 1
+  }
+
+  // 小说生成
+  if (data.type === 'introduction') {
+    if (chatDialogData.value.type === 0) {
+      setTimeout(() => {
+        chatDialogData.value.dialog.push({
+          avatar: 'icon_avatar',
+          time: parseTime(),
+          content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+          role: 'gpt',
+          type: 'theme'
+        })
+      }, 500)
+    }
+  }
+
+  // 小说生成 - 主题选择
+  if (data.type === 'theme') {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: data.content,
+      role: 'user',
       type: 'theme'
     })
 
-    delayMutual.value = false
+    if (!novelId.value) {
+      const res = await Api.novel.createNovel({
+        title: data.content,
+        type: 1
+      })
+      console.log('创建会话成功')
+      novelId.value = res.data.novel_id
+    }
 
-    novelGenerationProcessData.value.step = 1
+    mutualData.novelGeneration[0] = {
+      title: '小说题材',
+      id: 'theme',
+      content: data.content
+    }
 
-  }, 500)
+    // 背景选择
+    setTimeout(() => {
+      chatDialogData.value.dialog.push({
+        avatar: 'icon_avatar',
+        time: parseTime(),
+        content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+        role: 'gpt',
+        type: 'background'
+      })
+    }, 500)
+
+  }
+
+  // 小说生成 - 情节选择
+  if (data.type === 'plot') {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: data.content,
+      role: 'user',
+      type: 'plot'
+    })
+
+    mutualData.novelGeneration.push({
+      title: '情节',
+      id: 'plot',
+      content: data.content
+    })
+
+    chatDialogData.value.step = 5
+
+    setTimeout(() => {
+      chatDialogData.value.dialog.push({
+        avatar: 'icon_avatar',
+        time: parseTime(),
+        content: '选择您想要的文风。',
+        role: 'gpt',
+        type: 'writingStyle'
+      })
+    }, 500)
+  }
+
+  // 小说生成 - 文风
+  if (data.type === 'writingStyle') {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      content: data.content,
+      role: 'user',
+      type: 'writingStyle'
+    })
+
+    mutualData.novelGeneration.push({
+      title: '文风',
+      id: 'writingStyle',
+      content: data.content
+    })
+
+    chatDialogData.value.step = 6
+
+    setTimeout(() => {
+      chatDialogData.value.dialog.push({
+        avatar: 'icon_avatar',
+        time: parseTime(),
+        content: '',
+        role: 'gpt',
+        type: 'summary',
+        outline: true,
+        summaryList: mutualData.novelGeneration
+      })
+    }, 500)
+  }
+}
+
+// 获取所有可以交互的按钮
+const getChatInfoMutual = (type: DialogType) => {
+  // 功能选择禁用
+  return (type === 'introduction' && chatDialogData.value.step !== 0) ||
+    // 小说生成 - 主题选择禁用
+    (type === 'theme' && chatDialogData.value.step !== 1) ||
+    // 小说生成 - 情节
+    (type === 'plot' && chatDialogData.value.step !== 4) ||
+    // 小说生成 - 文风
+    (type === 'writingStyle' && chatDialogData.value.step !== 5)
+}
+
+// 初始化对话框
+const initChatDialogData = () => {
+  chatDialogData.value.dialog.push({
+    avatar: 'icon_avatar',
+    time: parseTime(),
+    content: '你好呀\r\n我是未未，你的创作助手\r\n无论你是遇到创作瓶颈，还是需要灵感激发，我都在这里帮助你。一起来创作吧！现在你需要什么帮助呢？',
+    role: 'gpt',
+    type: 'introduction'
+  })
 }
 
 // 滚动到底部
@@ -231,60 +356,14 @@ const scrollElToBottom = () => {
   }
 }
 
-// 生成背景
-const generationBackground = () => {
-
-  background.connected = true
-
-  background.content = ''
-
-  if (userInput.value) {
-    background.pervGenerationKeyword = userInput.value
-  }
-
-  const keyword = userInput.value || background.pervGenerationKeyword
-
-  backgroundInst.value = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${keyword}`)
-
-  backgroundInst.value.addEventListener('message', (message) => {
-    background.content += JSON.parse(message.data).content
-    requestIdleCallback(() => scrollElToBottom())
-  })
-
-  backgroundInst.value.addEventListener('error', () => {
-    background.connected = false
-  })
-
-}
-
-
-
-// 用户输入
-const handleSendClick = async () => {
-  novelGenerationProcessData.value.dialog.push({
-    role: 'user',
-    content: userInput.value,
-    time: '',
-    type: 'theme'
-  })
-
-  generationBackground()
-
-  userInput.value = ''
-
-  novelGenerationProcessData.value.step = 2
-
-}
-
 watchEffect(() => {
-  if (novelGenerationProcessData.value.dialog.length) {
+  if (chatDialogData.value.dialog.length) {
     requestIdleCallback(() => scrollElToBottom())
   }
 })
 
 onMounted(() => {
-  init()
-
+  initChatDialogData()
 })
 
 </script>
@@ -294,14 +373,52 @@ onMounted(() => {
       ref="scrollEl"
       class="flex-1 overflow-x-hidden"
     >
-      <div class="p-4">
-        <NovelGenerationProcess :data="novelGenerationProcessData.dialog" />
+      <div class="flex flex-col gap-y-5 p-4">
+        <template
+          v-for="dialog in chatDialogData.dialog"
+          :key="dialog.time"
+        >
+          <ChatInfoMutual
+            v-if="(['introduction', 'theme', 'background', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type) && dialog.role === 'gpt')"
+            :data="dialog"
+            :button-props="{
+              disabled: getChatInfoMutual(dialog.type)
+            }"
+            @button="handleChatInfoMutualButtonClick"
+          />
+          <ChatInfo
+            v-else-if="(['introductionAnswer', 'theme', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type))"
+            :data="dialog"
+          />
+          <BackgroundGeneration
+            v-else-if="(dialog.type === 'backgroundGeneration' && !bgGeneration.connected)"
+            :data="dialog.content"
+            :allow-mutual="(!bgGeneration.connected && chatDialogData.step === 2)"
+            @afresh="generationBackgroundContent"
+            @confirm="handleConfirmBackgroundContentClick"
+          />
+          <RoleGeneration
+            v-else-if="(dialog.type === 'role')"
+            :allow-mutual="(chatDialogData.step === 3)"
+            :data="dialog.roleStyleInfo"
+            @add="scrollElToBottom"
+            @next="handleConfirmRoleListClick"
+          />
+          <OutlineInfo
+            v-else-if="(dialog.type === 'summary')"
+            :data="dialog.summaryList"
+          />
+        </template>
+        <BackgroundGenerationTemp
+          v-if="(bgGeneration.connected && chatDialogData.step === 2)"
+          ref="bgGenerationTempRef"
+        />
       </div>
     </div>
     <div
       class="flex items-center bg-neutral-50 py-2.5 shadow-md"
       :class="{
-        'pointer-events-none': (novelGenerationProcessData.step !== 1)
+        'pointer-events-none': (chatDialogData.dialog[chatDialogData.dialog.length - 1]?.type !== 'background')
       }"
     >
       <div class="flex px-4 py-1.5 active:text-neutral-400">

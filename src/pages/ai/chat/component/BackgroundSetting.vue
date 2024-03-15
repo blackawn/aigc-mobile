@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Form, Field } from 'vant'
+import { compile } from 'vue'
+import { computed } from 'vue'
 
 export interface BackgroundSettingData {
   title: string
@@ -24,8 +26,12 @@ const props = withDefaults(defineProps<BackgroundSettingProps>(), {
 
 const backgroundSettingData = ref<BackgroundSettingData>({...props.data})
 
+const backgroundSettingDataToStr = computed(()=>{
+  return `时间：${backgroundSettingData.value.time}；地点：${backgroundSettingData.value.address}；背景：${backgroundSettingData.value.background}`
+})
+
 defineExpose({
-  backgroundSettingData
+  content: backgroundSettingDataToStr
 })
 
 </script>

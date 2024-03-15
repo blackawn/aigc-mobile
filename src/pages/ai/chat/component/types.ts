@@ -1,6 +1,9 @@
 export type DialogRole = 'gpt' | 'user'
 
-export type DialogType = 'theme' |
+export type DialogType =
+  'introduction' |
+  'introductionAnswer' |
+  'theme' |
   'background' |
   'backgroundGeneration' |
   'backgroundAnswer' |
@@ -10,11 +13,14 @@ export type DialogType = 'theme' |
   'writingStyle' |
   'summary'
 
+type RoleStyleInfoAge = '儿童' | '青少年' | '中年' | '老年'
+type RoleStyleInfoSex = '男' | '女'
+
 export interface RoleStyleInfoData {
   name: string
-  age: string
-  sex: string
-  character: string | []
+  age: RoleStyleInfoAge
+  sex: RoleStyleInfoSex
+  character: string | Array<string>
   [key: string]: any
 }
 
