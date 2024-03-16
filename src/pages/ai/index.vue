@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import { useRoute } from 'vue-router'
+import { Popup } from 'vant'
 import { Icon } from '@iconify/vue'
-import { router } from '@/router'
 import BaseNav from '@/components/BaseNav/index.vue'
+import { useRoute } from 'vue-router'
+import HistoryChat from './component/HistoryChat.vue'
+import { router } from '@/router'
 
 const route = useRoute()
 
 const routeName = ref('')
 
-const handleHistoryClick = () => {
+const showPopup = ref(false)
 
+const historyChatRef = ref<InstanceType<typeof HistoryChat> | null>(null)
+
+const handleHistoryClick = () => {
+  showPopup.value = true
 }
 
 const handleMineClick = () => {
@@ -62,6 +68,15 @@ watchEffect(() => {
     <div class="flex-1 overflow-hidden">
       <RouterView />
     </div>
+    <Popup
+      v-model:show="showPopup"
+      position="left"
+      :style="{ width: '80%', height: '100%' }"
+      teleport="body"
+      @opened="historyChatRef?.getNovelHistoryListData()"
+    >
+      <HistoryChat ref="historyChatRef" />
+    </Popup>
   </div>
 </template>
 <style></style>

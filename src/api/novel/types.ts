@@ -21,3 +21,24 @@ export interface CreateNovelBackgroundRes {
   content: string
   code: number
 }
+
+export interface NovelHistoryParams {
+  search?: string
+}
+
+export interface NovelHistoryData {
+  novel_id: number;
+  title?: string;
+  type: number;
+  sort: number;
+  is_top?: number;
+  updated_at: string;
+}
+
+export interface NovelHistoryRes {
+  today: Array<NovelHistoryData>
+  week: Array<NovelHistoryData>
+  early: Array<NovelHistoryData>
+}
+
+export type ModifyNovelHistoryParams = Pick<NovelHistoryData, 'is_top' | 'novel_id' | 'title'>

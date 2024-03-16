@@ -4,13 +4,15 @@ export type DialogType =
   'introduction' |
   'introductionAnswer' |
   'theme' |
+  'themeAnswer' |
   'background' |
   'backgroundGeneration' |
   'backgroundAnswer' |
   'role' |
   'plot' |
-  'style' |
+  'plotAnswer' |
   'writingStyle' |
+  'writingStyleAnswer' |
   'summary' |
   'outlineGeneration' 
 
@@ -36,7 +38,7 @@ export interface DialogData {
   role: DialogRole
   content: string
   type: DialogType
-  time: string
+  time?: string
   roleStyleInfo?: Array<RoleStyleInfoData>
   outline?: boolean
   summaryList?: Array<SummaryData>

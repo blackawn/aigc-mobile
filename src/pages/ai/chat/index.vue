@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, watchEffect, nextTick } from 'vue'
+import { ref, reactive, watch, computed, onMounted, watchEffect, nextTick } from 'vue'
 import { Icon } from '@iconify/vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
@@ -13,6 +13,7 @@ import Api from '@/api'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
+import { last } from 'lodash'
 
 enum CreationType {
   '小说生成' = 1,
@@ -23,13 +24,11 @@ enum CreationType {
 type ChatDialogType = 0 | CreationType
 
 interface ChatDialogData {
-  step?: number
   type: ChatDialogType
   dialog: Array<DialogData>
 }
 
 const chatDialogData = ref<ChatDialogData>({
-  step: 0,
   type: 0,
   dialog: []
 })
@@ -40,11 +39,13 @@ const mutualData = reactive<{
   novelGeneration: []
 })
 
+const lastChatDialogType = computed(() => last(chatDialogData.value.dialog)?.type || '')
+
 const userInput = ref('')
 
 const novelId = ref<number | null>(null)
 
-const scrollEl = ref<HTMLDivElement | null>(null)
+const scrollElem = ref<HTMLDivElement | null>(null)
 
 /**
  * backgroundGeneration
@@ -53,11 +54,9 @@ const scrollEl = ref<HTMLDivElement | null>(null)
 const backgroundGenerationTempRef = ref<InstanceType<typeof TempGeneration> | null>(null)
 
 const backgroundGeneration = reactive<{
-  eventSourceInst: EventSource | null
   connected: boolean
   lastKeyword: string
 }>({
-  eventSourceInst: null,
   connected: false,
   lastKeyword: '',
 })
@@ -68,15 +67,24 @@ const backgroundGeneration = reactive<{
 const outlineGenerationTempRef = ref<InstanceType<typeof TempGeneration> | null>(null)
 
 const outlineGeneration = reactive<{
-  eventSourceInst: EventSource | null
   connected: boolean
 }>({
-  eventSourceInst: null,
   connected: false
 })
 
+// 添加会话
+const addDialog = (opt: DialogData, time = 500) => {
+  setTimeout(() => {
+    chatDialogData.value.dialog.push({
+      avatar: 'icon_avatar',
+      time: parseTime(),
+      ...opt
+    })
+  }, time)
+}
+
 // 生成背景
-const generationBackgroundContent = () => {
+const generationBackgroundContent = (value?: string) => {
 
   // 清空内容
   if (backgroundGenerationTempRef.value?.elRef) {
@@ -88,23 +96,22 @@ const generationBackgroundContent = () => {
     chatDialogData.value.dialog.pop()
   }
 
-  if (userInput.value) {
-    backgroundGeneration.lastKeyword = userInput.value
+  if (value) {
+    backgroundGeneration.lastKeyword = value
   }
 
-  const keyword = userInput.value || backgroundGeneration.lastKeyword
-
-  backgroundGeneration.eventSourceInst = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${keyword}`)
+  let esp: EventSourcePolyfill | null = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${backgroundGeneration.lastKeyword}`)
 
   backgroundGeneration.connected = true
 
-  backgroundGeneration.eventSourceInst.addEventListener('message', (message) => {
+  esp.addEventListener('message', (message) => {
     // 临时打印生成的内容, 只操作dom
     (backgroundGenerationTempRef.value?.elRef as HTMLDivElement).textContent += JSON.parse(message.data).content
-    requestIdleCallback(() => scrollElToBottom())
+    requestAnimationFrame(() => scrollElToBottom())
+    
   })
 
-  backgroundGeneration.eventSourceInst.addEventListener('error', () => {
+  esp.addEventListener('error', () => {
     // 连接终止时再插入数据渲染组件
     chatDialogData.value.dialog.push({
       avatar: 'icon_avatar',
@@ -115,6 +122,7 @@ const generationBackgroundContent = () => {
     })
 
     backgroundGeneration.connected = false
+    esp = null
   })
 
 }
@@ -143,8 +151,6 @@ const handleConfirmBackgroundContentClick = (content: string) => {
       }]
     })
   }, 500)
-
-  chatDialogData.value.step = 3
 }
 
 // 确认角色
@@ -161,24 +167,19 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     content: content.slice(0, -1)
   })
 
-  chatDialogData.value.step = 4
+  addDialog({
+    content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
+    role: 'gpt',
+    type: 'plot',
+    roleStyleInfo: [{
+      id: nanoid(10),
+      name: '',
+      sex: '男',
+      age: '青少年',
+      character: []
+    }]
+  })
 
-  setTimeout(() => {
-    chatDialogData.value.dialog.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
-      content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
-      role: 'gpt',
-      type: 'plot',
-      roleStyleInfo: [{
-        id: nanoid(10),
-        name: '',
-        sex: '男',
-        age: '青少年',
-        character: []
-      }]
-    })
-  }, 500)
 }
 
 // 生成大纲
@@ -199,35 +200,33 @@ const generationOutlineContent = () => {
     content += `${item.title}：${item.content}；`
   })
 
-  outlineGeneration.eventSourceInst = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/outline?novel_id=${novelId.value}&content=${content}`)
+  let esp: EventSourcePolyfill | null = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/outline?novel_id=${novelId.value}&content=${content}`)
 
   outlineGeneration.connected = true
 
-  outlineGeneration.eventSourceInst.addEventListener('message', (message) => {
+  esp.addEventListener('message', (message) => {
     // 临时打印生成的内容, 只操作dom
     (outlineGenerationTempRef.value?.elRef as HTMLDivElement).textContent += JSON.parse(message.data).content
     requestIdleCallback(() => scrollElToBottom())
   })
 
-  outlineGeneration.eventSourceInst.addEventListener('error', () => {
+  esp.addEventListener('error', () => {
     // 连接终止时再插入数据渲染组件
-    chatDialogData.value.dialog.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
+    addDialog({
       content: (outlineGenerationTempRef.value?.elRef as HTMLDivElement).textContent || '',
       role: 'gpt',
       type: 'outlineGeneration'
     })
 
     outlineGeneration.connected = false
+    esp = null
   })
 
 }
 
 // 确认大纲信息
-const handleConfirmOutlineContentClick = ()=>{
+const handleConfirmOutlineContentClick = () => {
   generationOutlineContent()
-  chatDialogData.value.step = 7
 }
 
 // 聊天框按钮交互点击
@@ -245,21 +244,17 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
 
     chatDialogData.value.type = CreationType[data.content as unknown as number] as unknown as ChatDialogType
 
-    chatDialogData.value.step = 1
   }
 
   // 小说生成
   if (data.type === 'introduction') {
     if (chatDialogData.value.type === 1) {
-      setTimeout(() => {
-        chatDialogData.value.dialog.push({
-          avatar: 'icon_avatar',
-          time: parseTime(),
-          content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
-          role: 'gpt',
-          type: 'theme'
-        })
-      }, 500)
+
+      addDialog({
+        content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+        role: 'gpt',
+        type: 'theme'
+      })
     }
   }
 
@@ -270,7 +265,7 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
       time: parseTime(),
       content: data.content,
       role: 'user',
-      type: 'theme'
+      type: 'themeAnswer'
     })
 
     if (!novelId.value) {
@@ -289,15 +284,12 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
     }
 
     // 背景选择
-    setTimeout(() => {
-      chatDialogData.value.dialog.push({
-        avatar: 'icon_avatar',
-        time: parseTime(),
-        content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
-        role: 'gpt',
-        type: 'background'
-      })
-    }, 500)
+
+    addDialog({
+      content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
+      role: 'gpt',
+      type: 'background'
+    })
 
   }
 
@@ -308,7 +300,7 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
       time: parseTime(),
       content: data.content,
       role: 'user',
-      type: 'plot'
+      type: 'plotAnswer'
     })
 
     mutualData.novelGeneration.push({
@@ -317,28 +309,20 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
       content: data.content
     })
 
-    chatDialogData.value.step = 5
-
-    setTimeout(() => {
-      chatDialogData.value.dialog.push({
-        avatar: 'icon_avatar',
-        time: parseTime(),
-        content: '选择您想要的文风。',
-        role: 'gpt',
-        type: 'writingStyle'
-      })
-    }, 500)
+    addDialog({
+      content: '选择您想要的文风。',
+      role: 'gpt',
+      type: 'writingStyle'
+    })
   }
 
   // 小说生成 - 文风
   if (data.type === 'writingStyle') {
-    chatDialogData.value.dialog.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
+    addDialog({
       content: data.content,
       role: 'user',
-      type: 'writingStyle'
-    })
+      type: 'writingStyleAnswer'
+    }, 0)
 
     mutualData.novelGeneration.push({
       title: '文风',
@@ -346,55 +330,46 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
       content: data.content
     })
 
-    chatDialogData.value.step = 6
-
-    setTimeout(() => {
-      chatDialogData.value.dialog.push({
-        avatar: 'icon_avatar',
-        time: parseTime(),
-        content: '',
-        role: 'gpt',
-        type: 'summary',
-        outline: true,
-        summaryList: mutualData.novelGeneration
-      })
-    }, 500)
+    addDialog({
+      content: '',
+      role: 'gpt',
+      type: 'summary',
+      outline: true,
+      summaryList: mutualData.novelGeneration
+    })
   }
 }
 
 // 可以交互的按钮
 const getChatInfoMutual = (type: DialogType) => {
   // 功能选择禁用
-  return (type === 'introduction' && chatDialogData.value.step !== 0) ||
+  return (type === 'introduction' && lastChatDialogType.value !== 'introduction') ||
     // 小说生成 - 主题选择禁用
-    (type === 'theme' && chatDialogData.value.step !== 1) ||
+    (type === 'theme' && !['theme', 'background'].includes(lastChatDialogType.value)) ||
     // 小说生成 - 情节
-    (type === 'plot' && chatDialogData.value.step !== 4) ||
+    (type === 'plot' && lastChatDialogType.value !== 'plot') ||
     // 小说生成 - 文风
-    (type === 'writingStyle' && chatDialogData.value.step !== 5)
+    (type === 'writingStyle' && lastChatDialogType.value !== 'writingStyle')
 }
 
 // 用户发送
 const handleSendClick = async () => {
 
+  const value = userInput.value
+
+  userInput.value = ''
+
   // 生成背景
-  if (chatDialogData.value.type === 1 && chatDialogData.value.step === 1) {
-    chatDialogData.value.dialog.push({
-      avatar: 'icon_avatar',
-      content: userInput.value,
-      time: parseTime(),
+  if (chatDialogData.value.type === 1 && lastChatDialogType.value !== 'introductionAnswer') {
+    addDialog({
+      content: value,
       role: 'user',
       type: 'backgroundAnswer'
-    })
-
-    console.log('开始生成背景')
+    }, 0)
 
     setTimeout(() => {
-      generationBackgroundContent()
-      userInput.value = ''
+      generationBackgroundContent(value)
     }, 500)
-
-    chatDialogData.value.step = 2
   }
 
 }
@@ -412,14 +387,14 @@ const initChatDialogData = () => {
 
 // 滚动到底部
 const scrollElToBottom = () => {
-  if (scrollEl.value) {
-    scrollEl.value.scrollTop = scrollEl.value.scrollHeight
+  if (scrollElem.value) {
+    scrollElem.value.scrollTop = scrollElem.value.scrollHeight
   }
 }
 
 watchEffect(() => {
   if (chatDialogData.value.dialog.length) {
-    requestIdleCallback(() => scrollElToBottom())
+    requestAnimationFrame(() => scrollElToBottom())
   }
 })
 
@@ -431,7 +406,7 @@ onMounted(() => {
 <template>
   <div class="flex h-full flex-col bg-neutral-100">
     <div
-      ref="scrollEl"
+      ref="scrollElem"
       class="flex-1 overflow-x-hidden"
     >
       <div class="flex flex-col gap-y-5 p-4">
@@ -440,7 +415,7 @@ onMounted(() => {
           :key="dialog.time"
         >
           <ChatInfoMutual
-            v-if="(['introduction', 'theme', 'background', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type) && dialog.role === 'gpt')"
+            v-if="(['introduction', 'theme', 'background', 'plot', 'writingStyle'].includes(dialog.type) && dialog.role === 'gpt')"
             :data="dialog"
             :button-props="{
               disabled: getChatInfoMutual(dialog.type)
@@ -448,19 +423,19 @@ onMounted(() => {
             @button="handleChatInfoMutualButtonClick"
           />
           <ChatInfo
-            v-else-if="(['introductionAnswer', 'theme', 'backgroundAnswer', 'plot', 'writingStyle'].includes(dialog.type))"
+            v-else-if="(['introductionAnswer', 'themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
             :data="dialog"
           />
           <BackgroundGeneration
             v-else-if="(dialog.type === 'backgroundGeneration' && !backgroundGeneration.connected)"
             :data="dialog.content"
-            :allow-mutual="(!backgroundGeneration.connected && chatDialogData.step === 2)"
+            :allow-mutual="(!backgroundGeneration.connected && lastChatDialogType === 'backgroundGeneration')"
             @afresh="generationBackgroundContent"
             @confirm="handleConfirmBackgroundContentClick"
           />
           <RoleGeneration
             v-else-if="(dialog.type === 'role')"
-            :allow-mutual="(chatDialogData.step === 3)"
+            :allow-mutual="(lastChatDialogType === 'role')"
             :data="dialog.roleStyleInfo"
             @add="scrollElToBottom"
             @next="handleConfirmRoleListClick"
@@ -468,23 +443,23 @@ onMounted(() => {
           <OutlineInfo
             v-else-if="(dialog.type === 'summary')"
             :data="dialog.summaryList"
-            :allow-mutual="(chatDialogData.step === 6)"
+            :allow-mutual="(lastChatDialogType === 'summary')"
             @confirm="handleConfirmOutlineContentClick"
           />
           <OutlineGeneration
             v-else-if="(dialog.type === 'outlineGeneration')"
             :data="dialog.content"
-            :allow-mutual="(chatDialogData.step === 7)"
+            :allow-mutual="(lastChatDialogType === 'outlineGeneration')"
             @afresh="generationOutlineContent"
           />
         </template>
         <TempGeneration
-          v-if="(backgroundGeneration.connected && chatDialogData.step === 2)"
+          v-if="backgroundGeneration.connected"
           ref="backgroundGenerationTempRef"
           title="正在生成背景..."
         />
         <TempGeneration
-          v-if="(outlineGeneration.connected && chatDialogData.step === 7)"
+          v-if="outlineGeneration.connected"
           ref="outlineGenerationTempRef"
           title="正在生成大纲..."
         />
@@ -493,7 +468,7 @@ onMounted(() => {
     <div
       class="flex items-center bg-neutral-50 py-2.5 shadow-md"
       :class="{
-        'pointer-events-none': (chatDialogData.dialog[chatDialogData.dialog.length - 1]?.type !== 'background')
+        'pointer-events-none': (lastChatDialogType !== 'background')
       }"
     >
       <div class="flex px-4 py-1.5 active:text-neutral-400">
