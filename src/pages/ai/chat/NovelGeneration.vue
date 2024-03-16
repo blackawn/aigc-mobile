@@ -36,15 +36,15 @@ const mutualData = reactive<{
   novelGeneration: []
 })
 
-const lastChatDialogType = computed(() => last(chatDialogData.value)?.type || '')
-
 const novelId = ref<number>(props.novelId)
+
+const lastDialogType = computed(() => last(chatDialogData.value)?.type || '')
 
 /**
  * backgroundGeneration
  */
-
 const backgroundGenerationTempRef = ref<InstanceType<typeof TempGeneration> | null>(null)
+const backgroundGenerationRef = ref<InstanceType<typeof BackgroundGeneration> | null>(null)
 
 const backgroundGeneration = reactive<{
   connected: boolean
@@ -76,6 +76,7 @@ const addDialog = (opt: DialogData, time = 500) => {
   }, time)
 }
 
+// 输入背景
 const inputBackgroundAnswer = (value: string) => {
 
   addDialog({
@@ -230,7 +231,7 @@ const handleConfirmOutlineContentClick = () => {
 }
 
 // 聊天框按钮交互点击
-const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
+const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
 
   // 主题选择
   if (data.type === 'theme') {
@@ -242,6 +243,7 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
       type: 'themeAnswer'
     })
 
+    // 更新标题
     Api.novel.modifyNovelHistory({
       novel_id: novelId.value,
       title: `小说生成 - ${data.content}`
@@ -312,13 +314,13 @@ const handleChatInfoMutualButtonClick = async (data: Pick<DialogData, 'type' | '
 }
 
 // 可以交互的按钮
-const getChatInfoMutual = (type: DialogType) => {
+const getDialogMutualStatus = (type: DialogType) => {
   // 主题选择禁用
-  return (type === 'theme' && !['theme', 'background'].includes(lastChatDialogType.value)) ||
+  return (type === 'theme' && !['theme', 'background'].includes(lastDialogType.value)) ||
     // 情节
-    (type === 'plot' && lastChatDialogType.value !== 'plot') ||
+    (type === 'plot' && lastDialogType.value !== 'plot') ||
     // 文风
-    (type === 'writingStyle' && lastChatDialogType.value !== 'writingStyle')
+    (type === 'writingStyle' && lastDialogType.value !== 'writingStyle')
 }
 
 watchEffect(() => {
@@ -334,7 +336,7 @@ watchEffect(() => {
 
 defineExpose({
   inputBackgroundAnswer,
-  lastChatDialogType
+  lastChatDialogType: lastDialogType
 })
 
 </script>
@@ -344,12 +346,12 @@ defineExpose({
     :key="dialog.time"
   >
     <ChatInfoMutual
-      v-if="(['theme', 'background', 'plot', 'writingStyle'].includes(dialog.type) && dialog.role === 'gpt')"
+      v-if="(['theme', 'background', 'plot', 'writingStyle'].includes(dialog.type))"
       :data="dialog"
       :button-props="{
-        disabled: getChatInfoMutual(dialog.type)
+        disabled: getDialogMutualStatus(dialog.type)
       }"
-      @button="handleChatInfoMutualButtonClick"
+      @button="handleDialogMutualButtonClick"
     />
     <ChatInfo
       v-else-if="(['themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
@@ -358,26 +360,26 @@ defineExpose({
     <BackgroundGeneration
       v-else-if="(dialog.type === 'backgroundGeneration' && !backgroundGeneration.connected)"
       :data="dialog.content"
-      :allow-mutual="(!backgroundGeneration.connected && lastChatDialogType === 'backgroundGeneration')"
+      :allow-mutual="(!backgroundGeneration.connected && lastDialogType === 'backgroundGeneration')"
       @afresh="generationBackgroundContent"
       @confirm="handleConfirmBackgroundContentClick"
     />
     <RoleGeneration
       v-else-if="(dialog.type === 'role')"
-      :allow-mutual="(lastChatDialogType === 'role')"
+      :allow-mutual="(lastDialogType === 'role')"
       :data="dialog.roleStyleInfo"
       @next="handleConfirmRoleListClick"
     />
     <OutlineInfo
       v-else-if="(dialog.type === 'summary')"
       :data="dialog.summaryList"
-      :allow-mutual="(lastChatDialogType === 'summary')"
+      :allow-mutual="(lastDialogType === 'summary')"
       @confirm="handleConfirmOutlineContentClick"
     />
     <OutlineGeneration
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
-      :allow-mutual="(lastChatDialogType === 'outlineGeneration')"
+      :allow-mutual="(lastDialogType === 'outlineGeneration')"
       @afresh="generationOutlineContent"
     />
   </template>

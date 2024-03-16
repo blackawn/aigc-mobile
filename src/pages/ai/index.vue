@@ -23,6 +23,10 @@ const handleMineClick = () => {
   router.push('/client/mine')
 }
 
+const handlePopupOpened = () => {
+  historyChatRef.value?.getNovelHistoryListData()
+}
+
 watchEffect(() => {
   routeName.value = route.name as string
 })
@@ -73,7 +77,7 @@ watchEffect(() => {
       position="left"
       :style="{ width: '80%', height: '100%' }"
       teleport="body"
-      @opened="historyChatRef?.getNovelHistoryListData()"
+      @opened="handlePopupOpened"
     >
       <HistoryChat ref="historyChatRef" />
     </Popup>

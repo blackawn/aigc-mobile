@@ -28,7 +28,7 @@ const scrollElem = ref<HTMLDivElement | null>(null)
 
 const novelGenerationRef = ref<InstanceType<typeof NovelGeneration> | null>(null)
 
-const allowInputBox = computed(()=>{
+const allowInputBox = computed(() => {
   return (novelGenerationRef.value?.lastChatDialogType !== 'background')
 })
 
@@ -40,6 +40,18 @@ const initChatDialog = () => {
     role: 'gpt',
     type: 'guide'
   })
+
+  chatDialogData.value.guide.push({
+    avatar: 'icon_avatar',
+    time: parseTime(),
+    content: '小说生成',
+    role: 'user',
+    type: 'guideAnswer'
+  })
+
+  chatDialogData.value.type = 1
+
+  chatDialogData.value.dialog = [{'avatar':'icon_avatar','time':'2024/03/16 23:08:55','content':'好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。','role':'gpt','type':'theme'},{'avatar':'icon_avatar','time':'2024/03/16 23:08:57','content':'言情甜宠','role':'user','type':'themeAnswer'},{'avatar':'icon_avatar','time':'2024/03/16 23:08:57','content':'好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。','role':'gpt','type':'background'},{'avatar':'icon_avatar','time':'2024/03/16 23:08:58','content':'悬疑推理','role':'user','type':'themeAnswer'},{'avatar':'icon_avatar','time':'2024/03/16 23:08:59','content':'好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。','role':'gpt','type':'background'}]
 }
 
 // 添加会话
