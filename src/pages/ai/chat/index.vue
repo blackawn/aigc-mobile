@@ -29,7 +29,7 @@ const scrollElem = ref<HTMLDivElement | null>(null)
 const novelGenerationRef = ref<InstanceType<typeof NovelGeneration> | null>(null)
 
 const allowInputBox = computed(() => {
-  return (novelGenerationRef.value?.lastChatDialogType !== 'background')
+  return (novelGenerationRef.value?.lastDialog?.type !== 'background')
 })
 
 const initChatDialog = () => {

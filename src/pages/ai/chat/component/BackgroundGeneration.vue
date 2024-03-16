@@ -20,6 +20,7 @@ const emit = defineEmits<{
   (e: 'backgroundSelect'): void
   (e: 'afresh'): void
   (e: 'confirm', content: string): void
+  (e: 'render', el: HTMLDivElement): void
 }>()
 
 const { openDialog, closeDialog } = useBaseDialog()
@@ -91,8 +92,8 @@ const handleConfirmClick = () => {
 
 }
 
-defineExpose({
-  tempRef: tempElemRef
+onMounted(()=>{
+  emit('render', (tempElemRef.value as HTMLDivElement))
 })
 
 </script>
@@ -128,6 +129,7 @@ defineExpose({
       </div>
     </div>
     <div
+      v-show="isEmpty(props.data)"
       ref="tempElemRef"
       class="whitespace-pre-wrap text-justify text-sm"
     />

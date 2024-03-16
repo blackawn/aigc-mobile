@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watchEffect } from 'vue'
+import { ref, reactive, computed, watchEffect, nextTick } from 'vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
@@ -12,7 +12,7 @@ import Api from '@/api'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
-import { last } from 'lodash'
+import { last, isEmpty } from 'lodash'
 
 interface NovelGenerationProps {
   data: Array<DialogData>
@@ -38,13 +38,12 @@ const mutualData = reactive<{
 
 const novelId = ref<number>(props.novelId)
 
-const lastDialogType = computed(() => last(chatDialogData.value)?.type || '')
+const lastDialog = computed(() => last(chatDialogData.value))
 
 /**
  * backgroundGeneration
  */
-const backgroundGenerationTempRef = ref<InstanceType<typeof TempGeneration> | null>(null)
-const backgroundGenerationRef = ref<InstanceType<typeof BackgroundGeneration> | null>(null)
+const bgGenerateTempElem = ref<HTMLElement | null>(null)
 
 const backgroundGeneration = reactive<{
   connected: boolean
@@ -64,6 +63,32 @@ const outlineGeneration = reactive<{
 }>({
   connected: false
 })
+
+// 更改会话内容
+const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: number) => {
+
+  if (!isEmpty(chatDialogData.value)) {
+    // 如果提供了索引参数，则只修改特定索引位置的对象
+    if (typeof index === 'number' && index >= 0 && index < chatDialogData.value.length) {
+      chatDialogData.value[index] = {
+        ...chatDialogData.value[index],
+        ...data
+      }
+    } else {
+
+      // 否则，遍历数组，修改所有符合条件的对象
+      chatDialogData.value = chatDialogData.value.map((item) => {
+        if (item.type === type) {
+          return {
+            ...item,
+            ...data
+          }
+        }
+        return item
+      })
+    }
+  }
+}
 
 // 添加会话
 const addDialog = (opt: DialogData, time = 500) => {
@@ -93,43 +118,50 @@ const inputBackgroundAnswer = (value: string) => {
 // 生成背景
 const generationBackgroundContent = (value?: string) => {
 
-  // 清空内容
-  if (backgroundGenerationTempRef.value?.elRef) {
-    (backgroundGenerationTempRef.value?.elRef as HTMLDivElement).textContent = ''
-  }
-
   // 如果存在已生成的背景数据就删除掉
-  if (chatDialogData.value[chatDialogData.value.length - 1].type === 'backgroundGeneration') {
+  if (lastDialog.value?.type === 'backgroundGeneration') {
     chatDialogData.value.pop()
   }
 
-  if (value) {
-    backgroundGeneration.lastKeyword = value
-  }
-
-  let esp: EventSourcePolyfill | null = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/background?novel_id=${novelId.value}&content=${backgroundGeneration.lastKeyword}`)
-
-  backgroundGeneration.connected = true
-
-  esp.addEventListener('message', (message) => {
-    // 临时打印生成的内容, 只操作dom
-    (backgroundGenerationTempRef.value?.elRef as HTMLDivElement).textContent += JSON.parse(message.data).content
+  chatDialogData.value.push({
+    avatar: 'icon_avatar',
+    time: parseTime(),
+    content: '',
+    role: 'gpt',
+    type: 'backgroundGeneration'
   })
 
-  esp.addEventListener('error', () => {
-    // 连接终止时再插入数据渲染组件
-    chatDialogData.value.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
-      content: (backgroundGenerationTempRef.value?.elRef as HTMLDivElement).textContent || '',
-      role: 'gpt',
-      type: 'backgroundGeneration'
-    })
+  nextTick(() => {
 
-    backgroundGeneration.connected = false
-    esp = null
+    const tempElem = bgGenerateTempElem.value
+
+    if (tempElem) {
+
+      tempElem.textContent = ''
+
+      if (value) {
+        backgroundGeneration.lastKeyword = value
+      }
+
+      const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/background?novel_id=${1631}&content=${backgroundGeneration.lastKeyword}`
+
+      let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
+
+      esp.addEventListener('message', (message) => {
+        // 临时打印生成的内容, 只操作dom
+        tempElem.textContent += JSON.parse(message.data).content
+        emit('update')
+      })
+
+      esp.addEventListener('error', () => {
+        modifyDialog('backgroundGeneration', {
+          content: (tempElem.textContent as string)
+        })
+        esp = null
+      })
+
+    }
   })
-
 }
 
 // 确认背景
@@ -316,11 +348,11 @@ const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'co
 // 可以交互的按钮
 const getDialogMutualStatus = (type: DialogType) => {
   // 主题选择禁用
-  return (type === 'theme' && !['theme', 'background'].includes(lastDialogType.value)) ||
+  return (type === 'theme' && !['theme', 'background'].includes((lastDialog.value?.type as string))) ||
     // 情节
-    (type === 'plot' && lastDialogType.value !== 'plot') ||
+    (type === 'plot' && lastDialog.value?.type !== 'plot') ||
     // 文风
-    (type === 'writingStyle' && lastDialogType.value !== 'writingStyle')
+    (type === 'writingStyle' && lastDialog.value?.type !== 'writingStyle')
 }
 
 watchEffect(() => {
@@ -336,7 +368,7 @@ watchEffect(() => {
 
 defineExpose({
   inputBackgroundAnswer,
-  lastChatDialogType: lastDialogType
+  lastDialog
 })
 
 </script>
@@ -358,40 +390,31 @@ defineExpose({
       :data="dialog"
     />
     <BackgroundGeneration
-      v-else-if="(dialog.type === 'backgroundGeneration' && !backgroundGeneration.connected)"
+      v-else-if="(dialog.type === 'backgroundGeneration')"
+      :allow-mutual="((lastDialog?.type === 'backgroundGeneration') && !isEmpty(lastDialog.content))"
       :data="dialog.content"
-      :allow-mutual="(!backgroundGeneration.connected && lastDialogType === 'backgroundGeneration')"
       @afresh="generationBackgroundContent"
       @confirm="handleConfirmBackgroundContentClick"
+      @render="(el) => (bgGenerateTempElem = el)"
     />
     <RoleGeneration
       v-else-if="(dialog.type === 'role')"
-      :allow-mutual="(lastDialogType === 'role')"
+      :allow-mutual="(lastDialog?.type === 'role')"
       :data="dialog.roleStyleInfo"
       @next="handleConfirmRoleListClick"
     />
     <OutlineInfo
       v-else-if="(dialog.type === 'summary')"
       :data="dialog.summaryList"
-      :allow-mutual="(lastDialogType === 'summary')"
+      :allow-mutual="(lastDialog?.type === 'summary')"
       @confirm="handleConfirmOutlineContentClick"
     />
     <OutlineGeneration
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
-      :allow-mutual="(lastDialogType === 'outlineGeneration')"
+      :allow-mutual="(lastDialog?.type === 'outlineGeneration')"
       @afresh="generationOutlineContent"
     />
   </template>
-  <TempGeneration
-    v-if="backgroundGeneration.connected"
-    ref="backgroundGenerationTempRef"
-    title="正在生成背景..."
-  />
-  <TempGeneration
-    v-if="outlineGeneration.connected"
-    ref="outlineGenerationTempRef"
-    title="正在生成大纲..."
-  />
 </template>
 <style></style>

@@ -7,7 +7,7 @@ const configStore = storeConfig()
 const userStore = storeUser()
 
 export const axiosInstance: AxiosInstance = axios.create({
-  baseURL: '/api/api/v1/',
+  baseURL: '/api',
   timeout: 10000,
 })
 
