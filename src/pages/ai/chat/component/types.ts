@@ -1,8 +1,8 @@
 export type DialogRole = 'gpt' | 'user'
 
 export type DialogType =
-  'introduction' |
-  'introductionAnswer' |
+  'guide' |
+  'guideAnswer' |
   'theme' |
   'themeAnswer' |
   'background' |

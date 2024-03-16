@@ -1,10 +1,7 @@
-
-// 1小说生成 2小说续写 3小说扩写 4小说配图
-export type CreateNovelType = 0 | 1 | 2 | 3
-
 export interface CreateNovelParams {
   title: string
-  type: CreateNovelType
+  // 1小说生成 2小说续写 3小说扩写 4小说配图
+  type: number
 }
 
 export interface CreateNovelRes {
