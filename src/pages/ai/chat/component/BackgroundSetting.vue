@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Form, Field } from 'vant'
 import { compile } from 'vue'
 import { computed } from 'vue'
+import { watchEffect } from 'vue'
 
 export interface BackgroundSettingData {
   title: string
@@ -12,22 +13,42 @@ export interface BackgroundSettingData {
 }
 
 export interface BackgroundSettingProps {
-  data?: BackgroundSettingData
+  data?: string
 }
 
 const props = withDefaults(defineProps<BackgroundSettingProps>(), {
-  data: () => ({
-    title: '',
-    time: '',
-    address: '',
-    background: ''
-  })
+  data: ''
 })
 
-const backgroundSettingData = ref<BackgroundSettingData>({...props.data})
+// 提取背景描述
+const extractBackgroundSetting = (content: string) => {
+  const regex = /故事背景\d+：\n时间：([^\n]+)\n地点：([^\n]+)\n背景：([\s\S]+)(?=\n\n|$)/
 
-const backgroundSettingDataToStr = computed(()=>{
-  return `时间：${backgroundSettingData.value.time}；地点：${backgroundSettingData.value.address}；背景：${backgroundSettingData.value.background}`
+  const match = content.match(regex)
+
+  return {
+    title: match ? match[0].split('：')[0] : '',
+    time: match ? match[1] : '',
+    address: match ? match[2] : '',
+    background: match ? match[3].trim() : ''
+  }
+}
+
+const backgroundSettingData = ref<BackgroundSettingData>({
+  title: '',
+  time: '',
+  address: '',
+  background: ''
+})
+
+const backgroundSettingDataToStr = computed(() => {
+  return `时间：${backgroundSettingData.value?.time}；地点：${backgroundSettingData.value?.address}；背景：${backgroundSettingData.value?.background}`
+})
+
+watchEffect(() => {
+  if (props.data) {
+    backgroundSettingData.value = extractBackgroundSetting(props.data)
+  }
 })
 
 defineExpose({

@@ -4,7 +4,6 @@ import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './c
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
 import BackgroundGeneration from './component/BackgroundGeneration.vue'
-import TempGeneration from './component/TempGeneration.vue'
 import RoleGeneration from './component/RoleGeneration.vue'
 import OutlineInfo from './component/OutlineInfo.vue'
 import OutlineGeneration from './component/OutlineGeneration.vue'
@@ -13,6 +12,7 @@ import { EventSourcePolyfill } from 'event-source-polyfill'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
 import { last, isEmpty } from 'lodash'
+import { onMounted } from 'vue'
 
 interface NovelGenerationProps {
   data: Array<DialogData>
@@ -28,7 +28,7 @@ const emit = defineEmits<{
   (e: 'update'): void
 }>()
 
-const chatDialogData = ref<Array<DialogData>>(props.data)
+const chatDialogData = ref<Array<DialogData>>([...props.data])
 
 const mutualData = reactive<{
   novelGeneration: Array<SummaryData>
@@ -45,24 +45,12 @@ const lastDialog = computed(() => last(chatDialogData.value))
  */
 const bgGenerateTempElem = ref<HTMLElement | null>(null)
 
-const backgroundGeneration = reactive<{
-  connected: boolean
-  lastKeyword: string
-}>({
-  connected: false,
-  lastKeyword: '',
-})
+const lastBgGenerateContent = ref('')
 
 /**
  * outlineGeneration
  */
-const outlineGenerationTempRef = ref<InstanceType<typeof TempGeneration> | null>(null)
-
-const outlineGeneration = reactive<{
-  connected: boolean
-}>({
-  connected: false
-})
+const olGenerateTempElem = ref<HTMLElement | null>(null)
 
 // 更改会话内容
 const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: number) => {
@@ -79,10 +67,10 @@ const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: numbe
       // 否则，遍历数组，修改所有符合条件的对象
       chatDialogData.value = chatDialogData.value.map((item) => {
         if (item.type === type) {
-          return {
+          return reactive({
             ...item,
             ...data
-          }
+          })
         }
         return item
       })
@@ -91,14 +79,26 @@ const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: numbe
 }
 
 // 添加会话
-const addDialog = (opt: DialogData, time = 500) => {
-  setTimeout(() => {
-    chatDialogData.value.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
-      ...opt
-    })
-  }, time)
+const addDialog = async (opt: DialogData, time = 500, callback?: () => void) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const newDialog = {
+        avatar: 'icon_avatar',
+        time: parseTime(),
+        ...opt
+      }
+
+      try {
+        chatDialogData.value.push(newDialog)
+        if (callback) {
+          callback()
+        }
+        resolve(newDialog)
+      } catch (error) {
+        reject(error)
+      }
+    }, time)
+  })
 }
 
 // 输入背景
@@ -123,53 +123,56 @@ const generationBackgroundContent = (value?: string) => {
     chatDialogData.value.pop()
   }
 
-  chatDialogData.value.push({
-    avatar: 'icon_avatar',
-    time: parseTime(),
+  addDialog({
     content: '',
     role: 'gpt',
     type: 'backgroundGeneration'
-  })
+  }).then(() => {
 
-  nextTick(() => {
+    nextTick(() => {
 
-    const tempElem = bgGenerateTempElem.value
+      const tempElem = bgGenerateTempElem.value
 
-    if (tempElem) {
+      if (tempElem) {
 
-      tempElem.textContent = ''
+        tempElem.textContent = ''
 
-      if (value) {
-        backgroundGeneration.lastKeyword = value
-      }
+        if (value) {
+          lastBgGenerateContent.value = value
+        }
 
-      const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/background?novel_id=${1631}&content=${backgroundGeneration.lastKeyword}`
+        const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/background?novel_id=${novelId.value}&content=${lastBgGenerateContent.value}`
 
-      let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
+        let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
 
-      esp.addEventListener('message', (message) => {
-        // 临时打印生成的内容, 只操作dom
-        tempElem.textContent += JSON.parse(message.data).content
-        emit('update')
-      })
-
-      esp.addEventListener('error', () => {
-        modifyDialog('backgroundGeneration', {
-          content: (tempElem.textContent as string)
+        esp.addEventListener('message', (message) => {
+          // 临时打印生成的内容, 只操作dom
+          tempElem.textContent += JSON.parse(message.data).content
+          emit('update')
         })
-        esp = null
-      })
 
-    }
+        esp.addEventListener('error', () => {
+
+          modifyDialog('backgroundGeneration', {
+            content: (tempElem.textContent as string)
+          })
+
+          esp = null
+        })
+
+      }
+    })
   })
+
 }
 
 // 确认背景
-const handleConfirmBackgroundContentClick = (content: string) => {
+const handleConfirmBackgroundContentClick = (content: string, selected?: number) => {
   mutualData.novelGeneration.push({
     title: '背景设定',
     id: 'background',
-    content: content
+    content: content,
+    selected
   })
 
   addDialog({
@@ -204,62 +207,68 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
   addDialog({
     content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
     role: 'gpt',
-    type: 'plot',
-    roleStyleInfo: [{
-      id: nanoid(10),
-      name: '',
-      sex: '男',
-      age: '青少年',
-      character: []
-    }]
+    type: 'plot'
   })
 
 }
 
-// 生成大纲
+// 生成大纲内容
 const generationOutlineContent = () => {
 
-  // 清空内容
-  if (outlineGenerationTempRef.value?.elRef) {
-    (outlineGenerationTempRef.value?.elRef as HTMLDivElement).textContent = ''
-  }
-
   // 如果存在已生成的背景数据就删除掉
-  if (chatDialogData.value[chatDialogData.value.length - 1].type === 'outlineGeneration') {
+  if (lastDialog.value?.type === 'outlineGeneration') {
     chatDialogData.value.pop()
   }
 
-  let content = ''
-  mutualData.novelGeneration.forEach((item) => {
-    content += `${item.title}：${item.content}；`
-  })
+  addDialog({
+    content: '',
+    role: 'gpt',
+    type: 'outlineGeneration'
+  }).then(() => {
+    nextTick(() => {
+      const tempElem = olGenerateTempElem.value
 
-  let esp: EventSourcePolyfill | null = new EventSourcePolyfill(`https://api.novel.kafan321.com/api/v1/novel/generate/outline?novel_id=${novelId.value}&content=${content}`)
+      if (tempElem) {
 
-  outlineGeneration.connected = true
+        console.log(tempElem)
 
-  esp.addEventListener('message', (message) => {
-    // 临时打印生成的内容, 只操作dom
-    (outlineGenerationTempRef.value?.elRef as HTMLDivElement).textContent += JSON.parse(message.data).content
-  })
+        tempElem.textContent = ''
 
-  esp.addEventListener('error', () => {
-    // 连接终止时再插入数据渲染组件
-    addDialog({
-      content: (outlineGenerationTempRef.value?.elRef as HTMLDivElement).textContent || '',
-      role: 'gpt',
-      type: 'outlineGeneration'
+        let content = ''
+        mutualData.novelGeneration.forEach((item) => {
+          content += `${item.title}：${item.content}；`
+        })
+
+        const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/outline?novel_id=${novelId.value}&content=${content}`
+
+        let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
+
+        esp.addEventListener('message', (message) => {
+          // 临时打印生成的内容, 只操作dom
+          tempElem.textContent += JSON.parse(message.data).content
+          emit('update')
+        })
+
+        esp.addEventListener('error', () => {
+
+          modifyDialog('outlineGeneration', {
+            content: (tempElem.textContent as string)
+          })
+
+          esp = null
+        })
+
+      }
     })
-
-    outlineGeneration.connected = false
-    esp = null
   })
 
 }
 
 // 确认大纲信息
 const handleConfirmOutlineContentClick = () => {
-
+  
+  mutualData.novelGeneration = [{ 'title': '小说题材', 'id': 'theme', 'content': '都市生活' }, { 'title': '背景设定', 'id': 'background', 'content': '时间：古代；地点：仙界门派；背景：仙界门派是修真界最神秘的存在，他们位于终南山脉之巅。仙界门派的修真者们拥有超凡的法力和惊人的仙术，可以操控自然界的力量。门派中流传着许多神话和传说，有人说门派的始创者是一位半神半仙，曾经与天地之灵达成契约，获得无穷的修炼资源。每个修真者都渴望成为门派的一员，个个都是天之骄子，并为了进入门派展开了你争我夺的争斗。' }, { 'title': '角色', 'id': 'role', 'content': '姓名：丽丽；性别：女；年龄：青少年；角色特征：富豪' }, { 'title': '情节', 'id': 'plot', 'content': '舍生取义' }, { 'title': '文风', 'id': 'writingStyle', 'content': '轻小说风' }]
+  generationOutlineContent()
 }
 
 // 聊天框按钮交互点击
@@ -298,9 +307,7 @@ const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'co
 
   // 情节选择
   if (data.type === 'plot') {
-    chatDialogData.value.push({
-      avatar: 'icon_avatar',
-      time: parseTime(),
+    addDialog({
       content: data.content,
       role: 'user',
       type: 'plotAnswer'
@@ -356,7 +363,7 @@ const getDialogMutualStatus = (type: DialogType) => {
 }
 
 watchEffect(() => {
-  chatDialogData.value = props.data
+  chatDialogData.value = [...props.data]
   novelId.value = props.novelId
 })
 
@@ -364,6 +371,10 @@ watchEffect(() => {
   if (chatDialogData.value.length) {
     requestAnimationFrame(() => emit('update'))
   }
+})
+
+onMounted(() => {
+ novelId.value = 1630
 })
 
 defineExpose({
@@ -393,9 +404,10 @@ defineExpose({
       v-else-if="(dialog.type === 'backgroundGeneration')"
       :allow-mutual="((lastDialog?.type === 'backgroundGeneration') && !isEmpty(lastDialog.content))"
       :data="dialog.content"
+      :selected="dialog.selected"
       @afresh="generationBackgroundContent"
       @confirm="handleConfirmBackgroundContentClick"
-      @render="(el) => (bgGenerateTempElem = el)"
+      @mount="(el) => (bgGenerateTempElem = el)"
     />
     <RoleGeneration
       v-else-if="(dialog.type === 'role')"
@@ -412,8 +424,9 @@ defineExpose({
     <OutlineGeneration
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
-      :allow-mutual="(lastDialog?.type === 'outlineGeneration')"
+      :allow-mutual="((lastDialog?.type === 'outlineGeneration') && !isEmpty(lastDialog.content))"
       @afresh="generationOutlineContent"
+      @mount="(el) => (olGenerateTempElem = el)"
     />
   </template>
 </template>

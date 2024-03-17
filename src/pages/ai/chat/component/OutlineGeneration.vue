@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button } from 'vant'
+import { isEmpty } from 'lodash'
 
 interface OutlineGenerationProps {
   data?: string
@@ -16,7 +17,10 @@ const props = withDefaults(defineProps<OutlineGenerationProps>(),{
 const emit = defineEmits<{
   (e: 'afresh'): void
   (e: 'confirm'): void
+  (e: 'mount', el: HTMLDivElement): void
 }>()
+
+const tempElemRef = ref<HTMLDivElement | null>(null)
 
 const handleAfreshClick = ()=>{
   emit('afresh')
@@ -25,6 +29,10 @@ const handleAfreshClick = ()=>{
 const handleConfirmClick = ()=>{
   emit('confirm')
 }
+
+onMounted(() => {
+  emit('mount', (tempElemRef.value as HTMLDivElement))
+})
 
 </script>
 <template>
@@ -37,6 +45,11 @@ const handleConfirmClick = ()=>{
     >
       {{ props.data }}
     </div>
+    <div
+      v-show="isEmpty(props.data)"
+      ref="tempElemRef"
+      class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
+    />
     <div
       v-if="props.allowMutual"
       class="mt-3 flex justify-between"

@@ -8,11 +8,13 @@ import { Icon } from '@iconify/vue'
 
 export interface BackgroundGenerationProps {
   data?: string
+  selected?: number,
   allowMutual?: boolean
 }
 
 const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
   data: '',
+  selected: -1,
   allowMutual: false
 })
 
@@ -20,17 +22,16 @@ const emit = defineEmits<{
   (e: 'backgroundSelect'): void
   (e: 'afresh'): void
   (e: 'confirm', content: string): void
-  (e: 'render', el: HTMLDivElement): void
+  (e: 'mount', el: HTMLDivElement): void
 }>()
 
 const { openDialog, closeDialog } = useBaseDialog()
 
 const tempElemRef = ref<HTMLDivElement | null>(null)
 
-const selected = ref(-1)
+const selected = ref(props.selected)
 
-const backgroundSettingInst = ref<InstanceType<typeof BackgroundSetting> | null>(null)
-
+// 选择背景点击
 const handleSelectBackgroundClick = (index: number) => {
 
   if (!props.allowMutual) return
@@ -39,26 +40,11 @@ const handleSelectBackgroundClick = (index: number) => {
   emit('backgroundSelect')
 }
 
-const backgroundList = computed<Array<BackgroundSettingData>>(() => {
-
-  let storiesArray = []
-
-  // 分割
-  let regex = /故事背景\d+：\n时间：([^\n]+)\n地点：([^\n]+)\n背景：([^\n]+)(?=\n\n|$)/g
-  let matches
-
-  while ((matches = regex.exec(props.data)) !== null) {
-    let [, time, addr, background] = matches
-    storiesArray.push({
-      title: matches[0].split('：')[0],
-      time: time.trim(),
-      address: addr.trim(),
-      background: background.trim()
-    })
-  }
-  return storiesArray
+const backgroundListData = computed(() => {
+  return !isEmpty(props.data) ? props.data.split(/(?=故事背景\d+：)/) : []
 })
 
+// 重新生成
 const handleAfreshClick = () => {
   openDialog({
     message: '确定重新生成?',
@@ -71,6 +57,7 @@ const handleAfreshClick = () => {
 
 }
 
+// 确定背景
 const handleConfirmClick = () => {
 
   if (selected.value < 0) {
@@ -78,10 +65,12 @@ const handleConfirmClick = () => {
     return
   }
 
+  const backgroundSettingInst = ref<InstanceType<typeof BackgroundSetting> | null>(null)
+
   openDialog({
     title: '背景设定',
     message: () => h(BackgroundSetting, {
-      data: backgroundList.value[selected.value],
+      data: backgroundListData.value[selected.value],
       ref: backgroundSettingInst
     }),
 
@@ -92,8 +81,8 @@ const handleConfirmClick = () => {
 
 }
 
-onMounted(()=>{
-  emit('render', (tempElemRef.value as HTMLDivElement))
+onMounted(() => {
+  emit('mount', (tempElemRef.value as HTMLDivElement))
 })
 
 </script>
@@ -104,28 +93,15 @@ onMounted(()=>{
     </div>
     <div class="flex flex-col gap-y-2">
       <div
-        v-for="(item, index) in backgroundList"
-        :key="item.title"
-        class="rounded bg-neutral-100 p-2 text-sm"
+        v-for="(item, index) in backgroundListData"
+        :key="index"
+        class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm "
         :class="{
           'outline outline-primary': (selected === index)
         }"
         @click="handleSelectBackgroundClick(index)"
       >
-        <div>
-          <span>{{ item.title }}</span>
-        </div>
-        <div class="mt-0.5">
-          <div>
-            <span>时间:&nbsp;</span><span>{{ item.time }}</span>
-          </div>
-          <div>
-            <span>地点:&nbsp;</span><span>{{ item.address }}</span>
-          </div>
-          <div class="text-justify">
-            <span>背景:&nbsp;</span><span>{{ item.background }}</span>
-          </div>
-        </div>
+        {{ item.replace(/\n+$/, '') }}
       </div>
     </div>
     <div

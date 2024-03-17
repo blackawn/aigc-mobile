@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<RoleGenerationProps>(), {
   allowMutual: false
 })
 
-const roleListData = ref<Array<RoleStyleInfoData>>(props.data)
+const roleListData = ref<Array<RoleStyleInfoData>>([...props.data])
 
 const handleAddFeatureClick = (index: number) => {
 

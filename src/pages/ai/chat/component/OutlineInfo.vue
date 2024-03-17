@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const { openDialog } = useBaseDialog()
 
-const outlineInfoListData = ref<Array<SummaryData>>(props.data)
+const outlineInfoListData = ref<Array<SummaryData>>([...props.data])
 
 const handleModifyOutlineInfoClick = () => {
   openDialog({
@@ -35,7 +35,7 @@ const handleConfirmOutlineInfoClick = () => {
 }
 
 watchEffect(() => {
-  outlineInfoListData.value = props.data
+  outlineInfoListData.value = [...props.data]
 })
 
 </script>
