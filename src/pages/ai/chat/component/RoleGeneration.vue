@@ -17,7 +17,7 @@ interface RoleGenerationProps {
 
 const emit = defineEmits<{
   (e: 'add'): void
-  (e: 'next', data: Array<RoleStyleInfoData>): void
+  (e: 'confirm', data: Array<RoleStyleInfoData>): void
 }>()
 
 const { openDialog } = useBaseDialog()
@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<RoleGenerationProps>(), {
   allowMutual: false
 })
 
-const roleListData = ref<Array<RoleStyleInfoData>>([...props.data])
+const roleList = ref<Array<RoleStyleInfoData>>([...props.data])
 
 const handleAddFeatureClick = (index: number) => {
 
@@ -47,31 +47,31 @@ const handleAddFeatureClick = (index: number) => {
       ref: roleFeatureInst
     }),
     onConfirm() {
-      roleListData.value[index].character = roleFeatureInst.value?.selected || ['']
+      roleList.value[index].character = roleFeatureInst.value?.selectList || ['']
     }
   })
 
   nextTick(() => {
-    roleFeatureInst.value?.setSelected([...roleListData.value[index].character])
+    roleFeatureInst.value?.setSelected([...roleList.value[index].character])
   })
 
 }
 
 const handleRemoveFeatureClick = (index: number, value: string) => {
-  const featureIndex = (roleListData.value[index].character as Array<string>).findIndex((item: string) => item === value)
+  const featureIndex = (roleList.value[index].character as Array<string>).findIndex((item: string) => item === value)
   if (featureIndex !== -1) {
-    (roleListData.value[index].character as Array<string>).splice(featureIndex, 1)
+    (roleList.value[index].character as Array<string>).splice(featureIndex, 1)
   }
 }
 
 const handleAddNewRoleClick = () => {
 
-  if (roleListData.value.length >= 5) {
+  if (roleList.value.length >= 5) {
     showToast('最多添加5个角色!')
     return
   }
 
-  roleListData.value.push({ ...defaultRole, id: nanoid(10) })
+  roleList.value.push({ ...defaultRole, id: nanoid(10) })
 
   nextTick(() => {
     emit('add')
@@ -79,28 +79,26 @@ const handleAddNewRoleClick = () => {
 }
 
 const handleRemoveRoleClick = (index: number) => {
-  roleListData.value.splice(index, 1)
+  roleList.value.splice(index, 1)
 }
 
 const handleNextClick = () => {
-  const isVacancy = roleListData.value.every((item) => !isEmpty(item.name.trim()) && !isEmpty(item.character))
+  const isVacancy = roleList.value.every((item) => !isEmpty(item.name.trim()) && !isEmpty(item.character))
 
   if (!isVacancy) {
     showToast('请填写完整角色信息!')
     return
   }
 
-  const formatRoleListData = roleListData.value.map((item) => {
-
-    const { id, ...rest } = item // 使用解构赋值来排除 id 属性
+  const formatRoleList = roleList.value.map((item) => {
     return {
-      ...rest,
+      ...item,
       character: (item.character as Array<string>).join(',')
     }
 
   })
 
-  emit('next', formatRoleListData)
+  emit('confirm', formatRoleList)
 }
 
 const formatCharacter = (character: string | Array<string>) => {
@@ -145,7 +143,7 @@ const onTagLeave = (el: Element, done: () => void) => {
 }
 
 watchEffect(() => {
-  roleListData.value = props.data.map((item) => {
+  roleList.value = props.data.map((item) => {
     return {
       ...item,
       character: formatCharacter(item.character)
@@ -166,12 +164,12 @@ watchEffect(() => {
         @leave="onLeave"
       >
         <div
-          v-for="(item, index) in roleListData"
+          v-for="(item, index) in roleList"
           :key="item.id"
           class="relative rounded bg-neutral-100"
         >
           <div
-            v-if="(roleListData.length > 1 && props.allowMutual)"
+            v-if="(roleList.length > 1 && props.allowMutual)"
             class="absolute -right-1.5 -top-1.5 z-50"
           >
             <div
@@ -251,6 +249,9 @@ watchEffect(() => {
                       type="primary"
                       size="medium"
                       class="overflow-hidden text-nowrap"
+                      :class="{
+                        '!bg-primary/50': !props.allowMutual
+                      }"
                       :closeable="props.allowMutual"
                       @close="handleRemoveFeatureClick(index, feature)"
                     >

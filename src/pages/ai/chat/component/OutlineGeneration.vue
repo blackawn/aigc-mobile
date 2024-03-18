@@ -1,37 +1,85 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button } from 'vant'
+import { Button, showToast } from 'vant'
 import { isEmpty } from 'lodash'
+import { EventSourcePolyfill } from 'event-source-polyfill'
+import { useBaseDialog } from '@/composables/useBaseDialog'
+import { watchEffect } from 'vue'
+import { compile } from 'vue'
+import { computed } from 'vue'
 
 interface OutlineGenerationProps {
   data?: string
-  allowMutual?: boolean
+  novelId?: number
 }
 
 const props = withDefaults(defineProps<OutlineGenerationProps>(),{
   data: '',
-  allowMutual: false
+  novelId: -1
 })
 
 const emit = defineEmits<{
-  (e: 'afresh'): void
   (e: 'confirm'): void
-  (e: 'mount', el: HTMLDivElement): void
 }>()
 
-const tempElemRef = ref<HTMLDivElement | null>(null)
+const mutual = reactive({
+  connect: false
+})
+const { openDialog } = useBaseDialog()
+
+const outlineContent = ref(props.data)
+
+
+const outlineList = computed(()=>{
+  return outlineContent.value.match(/第\d+章[\s\S]*?(?=第\d+章|$)/g) || []
+})
+
+const esp = ref<EventSourcePolyfill | null>(null)
+
+const generateOutlineContent = ()=>{
+
+  if ((props.novelId < 0)) {
+    showToast('背景生成参数不足')
+    return
+  }
+
+  esp.value?.close()
+
+  mutual.connect = true
+
+  outlineContent.value = ''
+
+  const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/outline?novel_id=${props.novelId}&message_id=1`
+
+  esp.value = new EventSourcePolyfill(url)
+
+  esp.value.addEventListener('message', (message) => {
+    outlineContent.value += JSON.parse(message.data).content
+  })
+
+  esp.value.addEventListener('error', () => {
+    esp.value?.close()
+    esp.value = null
+    mutual.connect = false
+  })
+}
 
 const handleAfreshClick = ()=>{
-  emit('afresh')
+  openDialog({
+    message: '确定重新生成?',
+    onConfirm() {
+      generateOutlineContent()
+    },
+  })
 }
 
 const handleConfirmClick = ()=>{
-  emit('confirm')
+  // emit('confirm')
 }
 
-onMounted(() => {
-  emit('mount', (tempElemRef.value as HTMLDivElement))
+onMounted(()=>{
+  generateOutlineContent()
 })
 
 </script>
@@ -41,17 +89,11 @@ onMounted(() => {
       <span>大纲生成</span>
     </div>
     <div
-      class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
+      class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
     >
-      {{ props.data }}
+      {{ outlineContent }}
     </div>
     <div
-      v-show="isEmpty(props.data)"
-      ref="tempElemRef"
-      class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
-    />
-    <div
-      v-if="props.allowMutual"
       class="mt-3 flex justify-between"
     >
       <div
@@ -64,14 +106,23 @@ onMounted(() => {
         />
         <span class="ml-2 text-sm">重新生成</span>
       </div>
-      <Button
-        type="primary"
-        round
-        size="small"
-        @click="handleConfirmClick"
-      >
-        &nbsp;&nbsp;&nbsp;&nbsp;立即生成小说&nbsp;&nbsp;&nbsp;&nbsp;
-      </Button>
+      <div class="flex items-center gap-x-2">
+        <Button
+          size="small"
+          round
+          type="default"
+        >
+          &nbsp;&nbsp;&nbsp;编辑大纲&nbsp;&nbsp;&nbsp;
+        </Button>
+        <Button
+          type="primary"
+          round
+          size="small"
+          @click="handleConfirmClick"
+        >
+          &nbsp;&nbsp;&nbsp;&nbsp;立即生成小说&nbsp;&nbsp;&nbsp;&nbsp;
+        </Button>
+      </div>
     </div>
   </div>
 </template>

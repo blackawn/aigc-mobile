@@ -3,10 +3,12 @@ import { ref, reactive, computed, watchEffect, nextTick } from 'vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
+import ChatInfoMutualMultiple from './component/ChatInfoMutualMultiple.vue'
 import BackgroundGeneration from './component/BackgroundGeneration.vue'
 import RoleGeneration from './component/RoleGeneration.vue'
 import OutlineInfo from './component/OutlineInfo.vue'
 import OutlineGeneration from './component/OutlineGeneration.vue'
+import ChapterGeneration from './component/ChapterGeneration.vue'
 import Api from '@/api'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { parseTime } from '@/utils/format'
@@ -31,21 +33,14 @@ const emit = defineEmits<{
 const chatDialogData = ref<Array<DialogData>>([...props.data])
 
 const mutualData = reactive<{
-  novelGeneration: Array<SummaryData>
+  outlineInfoData: Array<SummaryData>
 }>({
-  novelGeneration: []
+  outlineInfoData: []
 })
 
 const novelId = ref<number>(props.novelId)
 
 const lastDialog = computed(() => last(chatDialogData.value))
-
-/**
- * backgroundGeneration
- */
-const bgGenerateTempElem = ref<HTMLElement | null>(null)
-
-const lastBgGenerateContent = ref('')
 
 /**
  * outlineGeneration
@@ -67,10 +62,10 @@ const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: numbe
       // 否则，遍历数组，修改所有符合条件的对象
       chatDialogData.value = chatDialogData.value.map((item) => {
         if (item.type === type) {
-          return reactive({
+          return {
             ...item,
             ...data
-          })
+          }
         }
         return item
       })
@@ -104,75 +99,36 @@ const addDialog = async (opt: DialogData, time = 500, callback?: () => void) => 
 // 输入背景
 const inputBackgroundAnswer = (value: string) => {
 
-  addDialog({
-    content: value,
-    role: 'user',
-    type: 'backgroundAnswer'
-  }, 0)
-
-  setTimeout(() => {
-    generationBackgroundContent(value)
-  }, 500)
-}
-
-// 生成背景
-const generationBackgroundContent = (value?: string) => {
-
-  // 如果存在已生成的背景数据就删除掉
-  if (lastDialog.value?.type === 'backgroundGeneration') {
-    chatDialogData.value.pop()
-  }
-
-  addDialog({
-    content: '',
-    role: 'gpt',
-    type: 'backgroundGeneration'
-  }).then(() => {
-
-    nextTick(() => {
-
-      const tempElem = bgGenerateTempElem.value
-
-      if (tempElem) {
-
-        tempElem.textContent = ''
-
-        if (value) {
-          lastBgGenerateContent.value = value
-        }
-
-        const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/background?novel_id=${novelId.value}&content=${lastBgGenerateContent.value}`
-
-        let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
-
-        esp.addEventListener('message', (message) => {
-          // 临时打印生成的内容, 只操作dom
-          tempElem.textContent += JSON.parse(message.data).content
-          emit('update')
-        })
-
-        esp.addEventListener('error', () => {
-
-          modifyDialog('backgroundGeneration', {
-            content: (tempElem.textContent as string)
-          })
-
-          esp = null
-        })
-
-      }
+  if (novelId.value) {
+    addDialog({
+      content: value,
+      role: 'user',
+      type: 'backgroundAnswer'
+    }, 0).then(() => {
+      addDialog({
+        content: '',
+        role: 'gpt',
+        keyword: value,
+        novelId: novelId.value,
+        type: 'backgroundGeneration'
+      })
     })
-  })
+  }
 
 }
 
 // 确认背景
-const handleConfirmBackgroundContentClick = (content: string, selected?: number) => {
-  mutualData.novelGeneration.push({
+const handleConfirmBackgroundContentClick = (data: { allContent: string, content: string, selected: number }) => {
+
+  modifyDialog('backgroundGeneration', {
+    selected: data.selected,
+    content: data.allContent
+  })
+
+  mutualData.outlineInfoData.push({
     title: '背景设定',
     id: 'background',
-    content: content,
-    selected
+    content: data.content
   })
 
   addDialog({
@@ -198,7 +154,13 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     content += `姓名：${role.name}；性别：${role.sex}；年龄：${role.age}；角色特征：${role.character}；`
   })
 
-  mutualData.novelGeneration.push({
+  console.log(data)
+
+  modifyDialog('role', {
+    roleStyleInfo: data
+  })
+
+  mutualData.outlineInfoData.push({
     title: '角色',
     id: 'role',
     content: content.slice(0, -1)
@@ -212,67 +174,27 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
 
 }
 
-// 生成大纲内容
-const generationOutlineContent = () => {
+// 确认大纲信息
+const handleConfirmOutlineInfoClick = () => {
 
-  // 如果存在已生成的背景数据就删除掉
-  if (lastDialog.value?.type === 'outlineGeneration') {
-    chatDialogData.value.pop()
-  }
-
+  //mutualData.outlineInfoData = [{ 'title': '小说题材', 'id': 'theme', 'content': '都市生活' }, { 'title': '背景设定', 'id': 'background', 'content': '时间：古代；地点：仙界门派；背景：仙界门派是修真界最神秘的存在，他们位于终南山脉之巅。仙界门派的修真者们拥有超凡的法力和惊人的仙术，可以操控自然界的力量。门派中流传着许多神话和传说，有人说门派的始创者是一位半神半仙，曾经与天地之灵达成契约，获得无穷的修炼资源。每个修真者都渴望成为门派的一员，个个都是天之骄子，并为了进入门派展开了你争我夺的争斗。' }, { 'title': '角色', 'id': 'role', 'content': '姓名：丽丽；性别：女；年龄：青少年；角色特征：富豪' }, { 'title': '情节', 'id': 'plot', 'content': '舍生取义' }, { 'title': '文风', 'id': 'writingStyle', 'content': '轻小说风' }]
   addDialog({
     content: '',
     role: 'gpt',
-    type: 'outlineGeneration'
-  }).then(() => {
-    nextTick(() => {
-      const tempElem = olGenerateTempElem.value
+    type: 'outlineGeneration',
+    novelId: novelId.value
+  }).then(()=>{
 
-      if (tempElem) {
-
-        console.log(tempElem)
-
-        tempElem.textContent = ''
-
-        let content = ''
-        mutualData.novelGeneration.forEach((item) => {
-          content += `${item.title}：${item.content}；`
-        })
-
-        const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/outline?novel_id=${novelId.value}&content=${content}`
-
-        let esp: EventSourcePolyfill | null = new EventSourcePolyfill(url)
-
-        esp.addEventListener('message', (message) => {
-          // 临时打印生成的内容, 只操作dom
-          tempElem.textContent += JSON.parse(message.data).content
-          emit('update')
-        })
-
-        esp.addEventListener('error', () => {
-
-          modifyDialog('outlineGeneration', {
-            content: (tempElem.textContent as string)
-          })
-
-          esp = null
-        })
-
-      }
-    })
   })
-
 }
 
-// 确认大纲信息
-const handleConfirmOutlineContentClick = () => {
-  
-  mutualData.novelGeneration = [{ 'title': '小说题材', 'id': 'theme', 'content': '都市生活' }, { 'title': '背景设定', 'id': 'background', 'content': '时间：古代；地点：仙界门派；背景：仙界门派是修真界最神秘的存在，他们位于终南山脉之巅。仙界门派的修真者们拥有超凡的法力和惊人的仙术，可以操控自然界的力量。门派中流传着许多神话和传说，有人说门派的始创者是一位半神半仙，曾经与天地之灵达成契约，获得无穷的修炼资源。每个修真者都渴望成为门派的一员，个个都是天之骄子，并为了进入门派展开了你争我夺的争斗。' }, { 'title': '角色', 'id': 'role', 'content': '姓名：丽丽；性别：女；年龄：青少年；角色特征：富豪' }, { 'title': '情节', 'id': 'plot', 'content': '舍生取义' }, { 'title': '文风', 'id': 'writingStyle', 'content': '轻小说风' }]
-  generationOutlineContent()
+// 生成小说
+const handleConfirmChapterGenerationClick = () => {
+
 }
 
 // 聊天框按钮交互点击
-const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
+const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>) => {
 
   // 主题选择
   if (data.type === 'theme') {
@@ -290,7 +212,7 @@ const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'co
       title: `小说生成 - ${data.content}`
     })
 
-    mutualData.novelGeneration[0] = {
+    mutualData.outlineInfoData[0] = {
       title: '小说题材',
       id: 'theme',
       content: data.content
@@ -305,49 +227,54 @@ const handleDialogMutualButtonClick = async (data: Pick<DialogData, 'type' | 'co
 
   }
 
-  // 情节选择
-  if (data.type === 'plot') {
-    addDialog({
-      content: data.content,
-      role: 'user',
-      type: 'plotAnswer'
-    })
-
-    mutualData.novelGeneration.push({
-      title: '情节',
-      id: 'plot',
-      content: data.content
-    })
-
-    // 文风选择
-    addDialog({
-      content: '选择您想要的文风。',
-      role: 'gpt',
-      type: 'writingStyle'
-    })
-  }
-
   // 文风
   if (data.type === 'writingStyle') {
     addDialog({
       content: data.content,
       role: 'user',
       type: 'writingStyleAnswer'
-    }, 0)
+    }, 0).then(() => {
+      mutualData.outlineInfoData.push({
+        title: '文风',
+        id: 'writingStyle',
+        content: data.content
+      })
 
-    mutualData.novelGeneration.push({
-      title: '文风',
-      id: 'writingStyle',
-      content: data.content
+      // 大纲
+      addDialog({
+        content: '',
+        role: 'gpt',
+        type: 'summary',
+        outline: true,
+        summaryList: mutualData.outlineInfoData
+      })
     })
+  }
+}
 
-    // 大纲
+// 聊天框按钮多选交互点击
+const handleChatMutualMultipleConfirmClick = (data: Pick<DialogData, 'type' | 'content'>) => {
+
+  // 情节选择
+  if (data.type === 'plot') {
     addDialog({
-      content: '',
-      role: 'gpt',
-      type: 'summary',
-      outline: true,
-      summaryList: mutualData.novelGeneration
+      content: data.content,
+      role: 'user',
+      type: 'plotAnswer'
+    }).then(() => {
+
+      mutualData.outlineInfoData.push({
+        title: '情节',
+        id: 'plot',
+        content: data.content
+      })
+
+      // 文风选择
+      addDialog({
+        content: '选择您想要的文风。',
+        role: 'gpt',
+        type: 'writingStyle'
+      })
     })
   }
 }
@@ -374,7 +301,7 @@ watchEffect(() => {
 })
 
 onMounted(() => {
- novelId.value = 1630
+  novelId.value = 1630
 })
 
 defineExpose({
@@ -389,45 +316,54 @@ defineExpose({
     :key="dialog.time"
   >
     <ChatInfoMutual
-      v-if="(['theme', 'background', 'plot', 'writingStyle'].includes(dialog.type))"
+      v-if="(['theme', 'writingStyle'].includes(dialog.type))"
       :data="dialog"
       :button-props="{
         disabled: getDialogMutualStatus(dialog.type)
       }"
-      @button="handleDialogMutualButtonClick"
+      @button="handleChatMutualButtonClick"
     />
     <ChatInfo
-      v-else-if="(['themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
+      v-else-if="(['background', 'themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
       :data="dialog"
     />
     <BackgroundGeneration
       v-else-if="(dialog.type === 'backgroundGeneration')"
-      :allow-mutual="((lastDialog?.type === 'backgroundGeneration') && !isEmpty(lastDialog.content))"
       :data="dialog.content"
       :selected="dialog.selected"
-      @afresh="generationBackgroundContent"
+      :novel-id="dialog.novelId"
+      :keyword="dialog.keyword"
       @confirm="handleConfirmBackgroundContentClick"
-      @mount="(el) => (bgGenerateTempElem = el)"
     />
     <RoleGeneration
       v-else-if="(dialog.type === 'role')"
       :allow-mutual="(lastDialog?.type === 'role')"
       :data="dialog.roleStyleInfo"
-      @next="handleConfirmRoleListClick"
+      @confirm="handleConfirmRoleListClick"
     />
     <OutlineInfo
       v-else-if="(dialog.type === 'summary')"
       :data="dialog.summaryList"
       :allow-mutual="(lastDialog?.type === 'summary')"
-      @confirm="handleConfirmOutlineContentClick"
+      :novel-id="novelId"
+      @confirm="handleConfirmOutlineInfoClick"
     />
     <OutlineGeneration
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
+      :novel-id="dialog.novelId"
       :allow-mutual="((lastDialog?.type === 'outlineGeneration') && !isEmpty(lastDialog.content))"
-      @afresh="generationOutlineContent"
-      @mount="(el) => (olGenerateTempElem = el)"
+      @confirm="handleConfirmChapterGenerationClick"
     />
+    <ChatInfoMutualMultiple
+      v-else-if="(dialog.type === 'plot')"
+      :data="dialog"
+      :button-props="{
+        disabled: getDialogMutualStatus(dialog.type)
+      }"
+      @confirm="handleChatMutualMultipleConfirmClick"
+    />
+    <!-- <ChapterGeneration /> -->
   </template>
 </template>
 <style></style>

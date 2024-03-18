@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Tab, Tabs, Button, Field, Tag } from 'vant'
+import { Tab, Tabs, Button, Field, Tag, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { reactive } from 'vue'
 
@@ -22,17 +22,20 @@ const mutual = reactive({
 
 const customizeValue = ref('')
 
-const selected = ref<Array<string>>([])
+const selectList = ref<Array<string>>([])
 
 const handleSelectClick = (value: string) => {
 
-  const isExistIndex = selected.value.findIndex((item: string) => item === value)
+  const isExistIndex = selectList.value.findIndex((item: string) => item === value)
 
   if (isExistIndex !== -1) {
-    selected.value.splice(isExistIndex, 1)
-  } else if (selected.value.length < 5) {
-    selected.value.push(value)
+    selectList.value.splice(isExistIndex, 1)
+  } else if (selectList.value.length >= 5) {
+    showToast('最多选5个特征')
+  } else {
+    selectList.value.push(value)
   }
+
 }
 
 const handleAddCustomizeFeatureClick = () => {
@@ -54,11 +57,11 @@ const handleRemoveCustomizeFeatureClick = (value: string) => {
 }
 
 const setSelected = (data: Array<string>) => {
-  selected.value = data
+  selectList.value = data
 }
 
 defineExpose({
-  selected,
+  selectList,
   setSelected
 })
 
@@ -75,7 +78,7 @@ defineExpose({
             v-for="item in roleFeatureData.figure"
             :key="item"
             size="small"
-            :type="(selected.includes(item) ? 'primary' : 'default')"
+            :type="(selectList.includes(item) ? 'primary' : 'default')"
             @click="handleSelectClick(item)"
           >
             {{ item }}
@@ -88,7 +91,7 @@ defineExpose({
             v-for="item in roleFeatureData.disposition"
             :key="item"
             size="small"
-            :type="(selected.includes(item) ? 'primary' : 'default')"
+            :type="(selectList.includes(item) ? 'primary' : 'default')"
             @click="handleSelectClick(item)"
           >
             {{ item }}
@@ -133,7 +136,7 @@ defineExpose({
                 :class="{
                   'pointer-events-none': mutual.edit
                 }"
-                :type="(selected.includes(item) ? 'primary' : 'default')"
+                :type="(selectList.includes(item) ? 'primary' : 'default')"
                 @click="handleCustomizeFeatureClick(item)"
               >
                 <div class="flex items-center">

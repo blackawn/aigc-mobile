@@ -14,7 +14,8 @@ export type DialogType =
   'writingStyle' |
   'writingStyleAnswer' |
   'summary' |
-  'outlineGeneration' 
+  'outlineGeneration' |
+  'chapterGeneration'
 
 type RoleStyleInfoAge = '儿童' | '青少年' | '中年' | '老年'
 type RoleStyleInfoSex = '男' | '女'

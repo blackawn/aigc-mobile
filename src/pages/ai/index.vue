@@ -24,7 +24,7 @@ const handleMineClick = () => {
 }
 
 const handlePopupOpened = () => {
-  historyChatRef.value?.getNovelHistoryListData()
+  historyChatRef.value?.getNovelHistoryList()
 }
 
 watchEffect(() => {

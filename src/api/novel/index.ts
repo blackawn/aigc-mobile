@@ -6,7 +6,8 @@ import {
   CreateNovelBackgroundRes,
   NovelHistoryParams,
   NovelHistoryRes,
-  ModifyNovelHistoryParams
+  ModifyNovelHistoryParams,
+  EditNovelContentParams
 } from './types'
 import { R } from '@/api/types'
 
@@ -40,4 +41,12 @@ export const modifyNovelHistory = (param: ModifyNovelHistoryParams): R => {
  */
 export const deleteNovelHistory = (param: number): R => {
   return axiosInstance.post('/novel/delete', { novel_id: param })
+}
+
+/**
+ * 编辑小说内容
+ * @param data 
+ */
+export const editNovelContent = (data: EditNovelContentParams): R => {
+  return axiosInstance.post('/novel/edit/content', data)
 }

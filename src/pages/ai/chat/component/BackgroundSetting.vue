@@ -41,8 +41,12 @@ const backgroundSettingData = ref<BackgroundSettingData>({
   background: ''
 })
 
-const backgroundSettingDataToStr = computed(() => {
-  return `时间：${backgroundSettingData.value?.time}；地点：${backgroundSettingData.value?.address}；背景：${backgroundSettingData.value?.background}`
+const formatBackgroundSettingData = computed(() => {
+  const content = `时间：${backgroundSettingData.value?.time}\n地点：${backgroundSettingData.value?.address}\n背景：${backgroundSettingData.value?.background}`
+  return {
+    titleContent: `${backgroundSettingData.value.title}：\n${content}`,
+    content: content
+  }
 })
 
 watchEffect(() => {
@@ -52,7 +56,7 @@ watchEffect(() => {
 })
 
 defineExpose({
-  content: backgroundSettingDataToStr
+  data: formatBackgroundSettingData
 })
 
 </script>

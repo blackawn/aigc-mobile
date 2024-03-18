@@ -39,3 +39,10 @@ export interface NovelHistoryRes {
 }
 
 export type ModifyNovelHistoryParams = Pick<NovelHistoryData, 'is_top' | 'novel_id' | 'title'>
+
+export interface EditNovelContentParams {
+  content: string
+  novel_id: number
+  type: number // 1-保存生成的章节内容 2-背景 3-大纲 4-镜头脚本 5-角色 6-题材 7-文风 8-内容设定 9-续写内容 10-扩写内容
+  chatper?: number
+}

@@ -9,7 +9,7 @@ import { gsap } from 'gsap'
 
 const searchValue = ref('')
 
-const novelHistoryListData = ref<NovelHistoryRes | null>(null)
+const novelHistoryList = ref<NovelHistoryRes | null>(null)
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -18,37 +18,38 @@ const mutual = reactive({
   load: true
 })
 
-const formatNovelHistoryListData = computed(() => {
+const formatNovelHistoryList = computed(() => {
   return {
     top: {
       label: '置顶',
-      list: novelHistoryListData.value?.today.filter((item) => item.is_top === 1)
+      list: Object.values(novelHistoryList.value || {}).flatMap(list => list.filter(item => item.is_top === 1))
     },
     today: {
       label: '今天',
-      list: novelHistoryListData.value?.today.filter((item) => item.is_top === 0)
+      list: novelHistoryList.value?.today.filter((item) => item.is_top === 0)
     },
     week: {
       label: '一周内',
-      list: novelHistoryListData.value?.week
+      list: novelHistoryList.value?.week.filter((item) => item.is_top === 0)
     },
     early: {
       label: '更早',
-      list: novelHistoryListData.value?.early
+      list: novelHistoryList.value?.early.filter((item) => item.is_top === 0)
     }
   }
 })
 
-const isEmptyListData = computed(() => every(novelHistoryListData.value, isEmpty))
+const isEmptyList = computed(() => every(novelHistoryList.value, isEmpty))
 
-const getNovelHistoryListData = async (keyword = '') => {
+// 获取历史数据
+const getNovelHistoryList = async (keyword = '') => {
   const res = await Api.novel.getNovelHistory({
     search: keyword
   })
 
   mutual.load = false
 
-  novelHistoryListData.value = res.data
+  novelHistoryList.value = res.data
 }
 
 // 编辑置顶
@@ -64,7 +65,7 @@ const handleToggleTopClick = async (data: NovelHistoryData) => {
   }).finally(() => mutual.modify = false)
 
   if (res.code === 0) {
-    getNovelHistoryListData()
+    getNovelHistoryList()
   }
 }
 
@@ -98,7 +99,7 @@ const handleEditClick = (data: NovelHistoryData) => {
 
       if (res.code === 0) {
         closeDialog()
-        getNovelHistoryListData()
+        getNovelHistoryList()
       }
     }
 
@@ -116,7 +117,7 @@ const handleDeleteClick = (data: NovelHistoryData) => {
       })
 
       if (res.code === 0) {
-        getNovelHistoryListData()
+        getNovelHistoryList()
       }
     }
   })
@@ -150,7 +151,7 @@ const onLeave = (el: Element, done: () => void) => {
 }
 
 defineExpose({
-  getNovelHistoryListData
+  getNovelHistoryList
 })
 
 </script>
@@ -162,8 +163,8 @@ defineExpose({
         placeholder="请输入搜索关键词"
         class="flex-1 !py-0 !pl-0 !pr-2"
         autocomplete="off"
-        @click-left-icon="getNovelHistoryListData(searchValue)"
-        @search="getNovelHistoryListData(searchValue)"
+        @click-left-icon="getNovelHistoryList(searchValue)"
+        @search="getNovelHistoryList(searchValue)"
       >
         <template #left-icon>
           <Icon
@@ -188,13 +189,13 @@ defineExpose({
         <Loading />
       </div>
       <div
-        v-else-if="isEmptyListData"
+        v-else-if="isEmptyList"
         class="flex h-full items-center justify-center"
       >
         <Empty description="没有数据" />
       </div>
       <div
-        v-for="item in formatNovelHistoryListData"
+        v-for="item in formatNovelHistoryList"
         :key="item.label"
       >
         <Divider

@@ -35,9 +35,11 @@ const mutualButtonMap: MutualButtonMap = {
 
 </script>
 <template>
-  <ChatInfo :data="props.data">
+  <ChatInfo
+    v-if="mutualButtonMap[props.data.type]"
+    :data="props.data"
+  >
     <div
-      v-if="mutualButtonMap[props.data.type]"
       class="mt-2 flex flex-wrap gap-1"
     >
       <div
