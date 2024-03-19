@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watchEffect, nextTick } from 'vue'
+import { ref, reactive, computed, watchEffect, watch } from 'vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
@@ -36,6 +36,10 @@ const chatDialogData = ref<Array<DialogData>>([...props.data])
 const outlineInfoList = ref<Array<SummaryData>>([])
 
 const novelId = ref<number>(props.novelId)
+
+const mutual = reactive({
+  init: false
+})
 
 const lastDialog = computed(() => last(chatDialogData.value))
 
@@ -109,13 +113,21 @@ const inputBackgroundAnswer = (value: string) => {
 
 }
 
-// 确认背景
-const handleConfirmBackgroundContentClick = (data: { allContent: string, content: string, selected: number }) => {
+// 保存背景
+const doneBackgroundContent = (data: { allContent: string, content: string, selected: number }) => {
+
+  mutual.init = true
 
   modifyDialog('backgroundGeneration', {
     selected: data.selected,
     content: data.allContent
   })
+
+  savaChatDialogList()
+}
+
+// 确认背景
+const handleConfirmBackgroundContentClick = (data: { allContent: string, content: string, selected: number }) => {
 
   outlineInfoList.value.push({
     title: '背景设定',
@@ -134,6 +146,8 @@ const handleConfirmBackgroundContentClick = (data: { allContent: string, content
       age: '青少年',
       character: []
     }]
+  }).then(() => {
+    doneBackgroundContent(data)
   })
 
 }
@@ -146,8 +160,6 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     content += `姓名：${role.name}；性别：${role.sex}；年龄：${role.age}；角色特征：${role.character}；`
   })
 
-  console.log(data)
-
   modifyDialog('role', {
     roleStyleInfo: data
   })
@@ -158,10 +170,14 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     content: content.slice(0, -1)
   })
 
+  console.log('确认')
+
   addDialog({
     content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
     role: 'gpt',
     type: 'plot'
+  }).then(() => {
+    savaChatDialogList()
   })
 
 }
@@ -274,6 +290,8 @@ const handleChatMutualMultipleConfirmClick = (data: Pick<DialogData, 'type' | 'c
         content: '选择您想要的文风。',
         role: 'gpt',
         type: 'writingStyle'
+      }).then(() => {
+        savaChatDialogList()
       })
     })
   }
@@ -292,6 +310,12 @@ const getDialogMutualStatus = (type: DialogType) => {
 // 保存会话信息
 const savaChatDialogList = () => {
 
+  console.log(mutual.init)
+
+  if (!mutual.init) return
+
+  console.log('保存')
+
   const data = {
     guide: props.guide,
     dialog: chatDialogData.value,
@@ -302,6 +326,11 @@ const savaChatDialogList = () => {
     content: JSON.stringify(data),
     type: 'sys'
   })
+}
+
+// 
+const modifyMutualInitStatus = (status: boolean) => {
+  mutual.init = status
 }
 
 watchEffect(() => {
@@ -315,15 +344,17 @@ watchEffect(() => {
   }
 })
 
-onMounted(() => {
-  novelId.value = 1630
-})
+watch(() => chatDialogData.value, (n, o) => {
+  if (n.length !== props.data.length) {
+    mutual.init = true
+  }
+}, { immediate: true, deep: true })
 
 defineExpose({
   inputBackgroundAnswer,
-  lastDialog
+  lastDialog,
+  modifyMutualInitStatus
 })
-
 </script>
 <template>
   <template
@@ -351,6 +382,7 @@ defineExpose({
       :novel-id="dialog.novelId"
       :keyword="dialog.keyword"
       :disabled="(lastDialog?.type !== 'backgroundGeneration')"
+      @done="doneBackgroundContent"
       @confirm="handleConfirmBackgroundContentClick"
     />
     <RoleGeneration

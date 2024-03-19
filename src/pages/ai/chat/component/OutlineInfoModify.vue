@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Tabs, Tab,Button } from 'vant'
-
+import { Tabs, Tab, Button } from 'vant'
 
 </script>
 <template>

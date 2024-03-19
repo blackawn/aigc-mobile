@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import type { DialogData } from './component/types'
 import NovelGeneration from './NovelGeneration.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
@@ -9,8 +9,7 @@ import Api from '@/api'
 import { parseTime } from '@/utils/format'
 import { useRoute } from 'vue-router'
 import { isEmpty } from 'lodash'
-import { computed } from 'vue'
-import { watchEffect } from 'vue'
+import { customAlphabet } from 'nanoid'
 
 interface ChatDialogData {
   type: number
@@ -19,7 +18,7 @@ interface ChatDialogData {
 }
 
 const chatDialogData = ref<ChatDialogData>({
-  type: 0,
+  type: -1,
   guide: [],
   dialog: []
 })
@@ -33,17 +32,17 @@ const scrollElem = ref<HTMLDivElement | null>(null)
 const novelGenerationRef = ref<InstanceType<typeof NovelGeneration> | null>(null)
 
 const allowInputBox = computed(() => {
-  return (novelGenerationRef.value?.lastDialog?.type !== 'background')
+  return (!['background', 'backgroundAnswer'].includes(novelGenerationRef.value?.lastDialog?.type || ''))
 })
 
-const getChatDialogList = async (id: number)=>{
- const res = await Api.novel.getChatDialogList({
-  novel_id: id
- })
+const getChatDialogList = async (id: number) => {
+  const res = await Api.novel.getChatDialogList({
+    novel_id: id
+  })
 
- novelId.value = id
- chatDialogData.value.guide = res.data.content.guide
- chatDialogData.value.dialog = res.data.content.dialog
+  novelId.value = id
+  chatDialogData.value.guide = res.data.content.guide || []
+  chatDialogData.value.dialog = res.data.content.dialog || []
 }
 
 const initChatDialog = () => {
@@ -54,18 +53,6 @@ const initChatDialog = () => {
     role: 'gpt',
     type: 'guide'
   })
-  
-  // chatDialogData.value.guide.push({
-  //   avatar: 'icon_avatar',
-  //   time: parseTime(),
-  //   content: '小说生成',
-  //   role: 'user',
-  //   type: 'guideAnswer'
-  // })
-
-  // chatDialogData.value.type = 1
-
-  // chatDialogData.value.dialog = 
 }
 
 // 添加会话
@@ -149,14 +136,29 @@ const scrollElToBottom = () => {
   }
 }
 
-watchEffect(()=>{
-  const id = Number(route.query.id)
-  const type = Number(route.query.type)
-  if((id > 0) && (type > 0)){
-    chatDialogData.value.type = type
-    getChatDialogList(id)
+watch(() => route.query, (n, o) => {
+  const newId = Number(n.id)
+  const newType = Number(n.type)
+
+  const oldId = Number(o?.id)
+  const oldType = Number(o?.type)
+
+  if ((!newId && !newType) && (oldId && oldType)) {
+    
+  // novelGenerationRef.value?.modifyMutualInitStatus(false)
+
+    chatDialogData.value.guide = []
+    chatDialogData.value.dialog = []
+    chatDialogData.value.type = -1
+    novelId.value = -1
+
+    initChatDialog()
+  } else if ((newId > 0) && (newType > 0)) {
+    chatDialogData.value.type = newType
+    getChatDialogList(newId)
   }
-})
+
+}, { immediate: true })
 
 onMounted(() => {
   initChatDialog()
@@ -164,7 +166,10 @@ onMounted(() => {
 
 </script>
 <template>
-  <div class="flex h-full flex-col bg-neutral-100">
+  <div
+    ref="xRef"
+    class="flex h-full flex-col bg-neutral-100"
+  >
     <div
       ref="scrollElem"
       class="flex-1 overflow-x-hidden"
@@ -183,6 +188,7 @@ onMounted(() => {
         />
         <NovelGeneration
           v-if="(chatDialogData.type === 1)"
+          :key="novelId"
           ref="novelGenerationRef"
           :data="chatDialogData.dialog"
           :guide="chatDialogData.guide"

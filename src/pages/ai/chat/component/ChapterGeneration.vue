@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { isEmpty } from 'lodash'
-import { NativeEventSource, } from 'event-source-polyfill'
+import { EventSourcePolyfill } from 'event-source-polyfill'
 
 interface OutlineGenerationProps {
   data?: string
@@ -32,7 +32,7 @@ const chapterNum = ref(props.chapter)
 
 const { openDialog } = useBaseDialog()
 
-const esp = ref<EventSource | null>(null)
+const esp = ref<EventSourcePolyfill | null>(null)
 
 // 生成章节
 const generateChapterContent = (type?: number) => {
@@ -47,7 +47,6 @@ const generateChapterContent = (type?: number) => {
   mutual.generate = true
 
   esp.value?.close()
-
 
   switch (type) {
     case 0:
@@ -67,7 +66,7 @@ const generateChapterContent = (type?: number) => {
 
   const url = `${apiUrl}/novel/generate/content?novel_id=${props.novelId}&chapter=${chapterNum.value}&message_id=1`
 
-  esp.value = new NativeEventSource(url)
+  esp.value = new EventSourcePolyfill(url)
 
   esp.value.addEventListener('message', (message) => {
     chapterContent.value += JSON.parse(message.data).content
@@ -110,6 +109,10 @@ onMounted(() => {
   if (isEmpty(props.data)) {
     generateChapterContent(0)
   }
+})
+
+onBeforeUnmount(() => {
+  esp.value?.close()
 })
 
 </script>

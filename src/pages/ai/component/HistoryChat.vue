@@ -226,14 +226,18 @@ defineExpose({
             <div
               v-for="(record, index) in item.list"
               :key="record.novel_id"
-              class="flex items-center gap-x-2 rounded bg-neutral-100 px-4 py-3"
+              class="flex rounded bg-neutral-100 px-4 py-3"
               :data-index="index"
-              @click="handleRecordClick(record)"
             >
-              <div>
-                <Icon icon="lucide:book-open-text" />
+              <div
+                class="flex flex-1 items-center truncate "
+                @click="handleRecordClick(record)"
+              > 
+                <div class="mr-2 ">
+                  <Icon icon="lucide:book-open-text" />
+                </div>
+                <span class="flex-1 truncate text-sm ">{{ record.title }}</span>
               </div>
-              <span class="flex-1 truncate text-sm">{{ record.title }}</span>
               <div class="flex gap-x-2">
                 <div
                   class="p-1 active:text-neutral-400"

@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount, h, watchEffect } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
 import { isEmpty } from 'lodash'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineModify from './OutlineModify.vue'
-import { watchEffect } from 'vue'
-import { h } from 'vue'
 
 interface OutlineGenerationProps {
   data?: string
@@ -101,16 +99,20 @@ const handleConfirmClick = () => {
   emit('confirm', outlineContent.value)
 }
 
+watchEffect(() => {
+  if (!isEmpty(props.data)) {
+    outlineContent.value = props.data
+  }
+})
+
 onMounted(() => {
   if (isEmpty(props.data)) {
     generateOutlineContent()
   }
 })
 
-watchEffect(() => {
-  if (!isEmpty(props.data)) {
-    outlineContent.value = props.data
-  }
+onBeforeUnmount(() => {
+  esp.value?.close()
 })
 
 </script>

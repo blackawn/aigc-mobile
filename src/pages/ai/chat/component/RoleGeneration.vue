@@ -17,6 +17,7 @@ interface RoleGenerationProps {
 
 const emit = defineEmits<{
   (e: 'add'): void
+  (e: 'mounted'): void
   (e: 'confirm', data: Array<RoleStyleInfoData>): void
 }>()
 

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import Vue, { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { isEmpty } from 'lodash'
+import { router } from '@/router'
+import { customAlphabet } from 'nanoid'
 
 interface InputBoxProps {
   disabled?: boolean
@@ -24,7 +26,7 @@ const send = () => {
     showToast('请输入有效内容')
     return
   }
-  
+
   emit('send', value.value)
   value.value = ''
 }
@@ -34,21 +36,28 @@ const onSend = (event: KeyboardEvent) => {
   send()
 }
 
+const handleNewChatClick = () => {
+  router.push('/client/ai/chat')
+}
+
 </script>
 <template>
-  <div
-    class="flex items-center bg-neutral-50 py-2.5 shadow-md"
-    :class="{
-      'pointer-events-none': props.disabled
-    }"
-  >
-    <div class="flex px-4 py-1.5 active:text-neutral-400">
+  <div class="flex items-center bg-neutral-50 py-2.5 shadow-md">
+    <div
+      class="flex px-4 py-1.5 active:text-neutral-400"
+      @click="handleNewChatClick"
+    >
       <Icon
         icon="oui:ml-create-single-metric-job"
         class="text-xl"
       />
     </div>
-    <div class="flex-1 rounded-md bg-neutral-200/50 px-2 py-1">
+    <div
+      class="flex-1 rounded-md bg-neutral-200/50 px-2 py-1"
+      :class="{
+        'pointer-events-none': props.disabled
+      }"
+    >
       <div class="relative flex-1 overflow-hidden">
         <textarea
           v-model="value"
@@ -66,6 +75,9 @@ const onSend = (event: KeyboardEvent) => {
     </div>
     <div
       class="flex px-4 py-1.5 active:text-neutral-400"
+      :class="{
+        'pointer-events-none': props.disabled
+      }"
       @click="send"
     >
       <Icon

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, h, onMounted, reactive } from 'vue'
+import { computed, ref, h, onMounted, reactive, onBeforeUnmount, watchEffect } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundModify from './BackgroundModify.vue'
 import { isEmpty } from 'lodash'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
-import { watchEffect } from 'vue'
 
 export interface BackgroundGenerationProps {
   data?: string
@@ -26,6 +25,7 @@ const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
 
 const emit = defineEmits<{
   (e: 'update'): void
+  (e: 'done', data: { allContent: string, content: string, selected: number }): void
   (e: 'confirm', data: { allContent: string, content: string, selected: number }): void
 }>()
 
@@ -38,6 +38,8 @@ const backgroundList = computed(() => {
 })
 
 const esp = ref<EventSourcePolyfill | null>(null)
+
+const backgroundModifyRef = ref<InstanceType<typeof BackgroundModify> | null>(null)
 
 const selected = ref(props.selected)
 
@@ -71,6 +73,13 @@ const generateBackground = () => {
   })
 
   esp.value.addEventListener('error', () => {
+
+    emit('done', {
+      allContent: backgroundList.value.join(''),
+      content: backgroundModifyRef.value?.getContent().content || '',
+      selected: selected.value
+    })
+
     esp.value?.close()
     esp.value = null
     mutual.generate = false
@@ -106,8 +115,6 @@ const handleConfirmClick = () => {
     showToast('请选择背景!')
     return
   }
-
-  const backgroundModifyRef = ref<InstanceType<typeof BackgroundModify> | null>(null)
 
   openDialog({
     title: '背景设定',
@@ -153,6 +160,10 @@ watchEffect(() => {
   }
 
   selected.value = props.selected
+})
+
+onBeforeUnmount(() => {
+  esp.value?.close()
 })
 
 </script>
