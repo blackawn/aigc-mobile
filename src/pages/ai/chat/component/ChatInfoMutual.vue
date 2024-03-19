@@ -3,6 +3,7 @@ import { ref, withDefaults } from 'vue'
 import { DialogData, DialogType } from './types'
 import ChatInfo from './ChatInfo.vue'
 import { Button, ButtonProps } from 'vant'
+import { onMounted } from 'vue'
 
 export interface ChatDialogProps {
   data?: DialogData,
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
 
 const emit = defineEmits<{
   (e: 'button', data: Pick<DialogData, 'type' | 'content'>): void
+  (e: 'mounted'): void
 }>()
 
 const mutualButtonMap: MutualButtonMap = {
@@ -33,15 +35,17 @@ const mutualButtonMap: MutualButtonMap = {
   writingStyle: ['鲁迅风', '红楼风', '轻小说风', '古文小说风', '金庸武侠风', '马克吐温幽默风', '夏目漱石心理风', '海明威简明严肃风']
 } as MutualButtonMap
 
+onMounted(() => {
+  emit('mounted')
+})
+
 </script>
 <template>
   <ChatInfo
     v-if="mutualButtonMap[props.data.type]"
     :data="props.data"
   >
-    <div
-      class="mt-2 flex flex-wrap gap-1"
-    >
+    <div class="mt-2 flex flex-wrap gap-1">
       <div
         v-for="item in mutualButtonMap[props.data.type]"
         :key="item"

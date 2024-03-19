@@ -4,8 +4,13 @@ import { Search, Button, Divider, Field, showToast, Loading, Empty } from 'vant'
 import { Icon } from '@iconify/vue'
 import Api, { NovelHistoryRes, NovelHistoryData } from '@/api'
 import { isEmpty, every } from 'lodash'
+import { router } from '@/router'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { gsap } from 'gsap'
+
+const emit = defineEmits<{
+  (e: 'record'): void
+}>()
 
 const searchValue = ref('')
 
@@ -123,6 +128,12 @@ const handleDeleteClick = (data: NovelHistoryData) => {
   })
 }
 
+// 记录点击
+const handleRecordClick = (data: NovelHistoryData) => {
+  router.push(`/client/ai/chat?id=${data.novel_id}&type=${data.type}`)
+  emit('record')
+}
+
 const onBeforeEnter = (el: Element) => {
   gsap.to(el, {
     translateX: '-100%',
@@ -217,15 +228,16 @@ defineExpose({
               :key="record.novel_id"
               class="flex items-center gap-x-2 rounded bg-neutral-100 px-4 py-3"
               :data-index="index"
+              @click="handleRecordClick(record)"
             >
               <div>
                 <Icon icon="lucide:book-open-text" />
               </div>
-              <span class="flex-1 text-sm">{{ record.title }}</span>
-              <div class="flex gap-x-4">
+              <span class="flex-1 truncate text-sm">{{ record.title }}</span>
+              <div class="flex gap-x-2">
                 <div
-                  class="active:text-neutral-400"
-                  @click="handleToggleTopClick(record)"
+                  class="p-1 active:text-neutral-400"
+                  @click.stop="handleToggleTopClick(record)"
                 >
                   <Icon
                     v-if="record.is_top === 1"
@@ -237,14 +249,14 @@ defineExpose({
                   />
                 </div>
                 <div
-                  class="active:text-neutral-400"
-                  @click="handleEditClick(record)"
+                  class="p-1 active:text-neutral-400"
+                  @click.stop="handleEditClick(record)"
                 >
                   <Icon icon="lucide:edit" />
                 </div>
                 <div
-                  class="active:text-neutral-400"
-                  @click="handleDeleteClick(record)"
+                  class="p-1 active:text-neutral-400"
+                  @click.stop="handleDeleteClick(record)"
                 >
                   <Icon icon="mi:delete" />
                 </div>

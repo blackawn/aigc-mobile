@@ -5,39 +5,37 @@ import { Button, showToast } from 'vant'
 import { isEmpty } from 'lodash'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
+import OutlineModify from './OutlineModify.vue'
 import { watchEffect } from 'vue'
-import { compile } from 'vue'
-import { computed } from 'vue'
+import { h } from 'vue'
 
 interface OutlineGenerationProps {
   data?: string
   novelId?: number
 }
 
-const props = withDefaults(defineProps<OutlineGenerationProps>(),{
+const props = withDefaults(defineProps<OutlineGenerationProps>(), {
   data: '',
   novelId: -1
 })
 
 const emit = defineEmits<{
-  (e: 'confirm'): void
+  (e: 'edit-confirm', content: string): void
+  (e: 'confirm', content: string): void
 }>()
 
 const mutual = reactive({
-  connect: false
+  generate: false
 })
-const { openDialog } = useBaseDialog()
+const { openDialog, closeDialog } = useBaseDialog()
 
 const outlineContent = ref(props.data)
 
-
-const outlineList = computed(()=>{
-  return outlineContent.value.match(/第\d+章[\s\S]*?(?=第\d+章|$)/g) || []
-})
-
 const esp = ref<EventSourcePolyfill | null>(null)
 
-const generateOutlineContent = ()=>{
+const generateOutlineContent = () => {
+
+  if (mutual.generate) return
 
   if ((props.novelId < 0)) {
     showToast('背景生成参数不足')
@@ -46,11 +44,13 @@ const generateOutlineContent = ()=>{
 
   esp.value?.close()
 
-  mutual.connect = true
+  mutual.generate = true
 
   outlineContent.value = ''
 
-  const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/outline?novel_id=${props.novelId}&message_id=1`
+  const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
+
+  const url = `${apiUrl}/novel/generate/outline?novel_id=${props.novelId}&message_id=1`
 
   esp.value = new EventSourcePolyfill(url)
 
@@ -61,11 +61,11 @@ const generateOutlineContent = ()=>{
   esp.value.addEventListener('error', () => {
     esp.value?.close()
     esp.value = null
-    mutual.connect = false
+    mutual.generate = false
   })
 }
 
-const handleAfreshClick = ()=>{
+const handleAfreshClick = () => {
   openDialog({
     message: '确定重新生成?',
     onConfirm() {
@@ -74,12 +74,43 @@ const handleAfreshClick = ()=>{
   })
 }
 
-const handleConfirmClick = ()=>{
-  // emit('confirm')
+const handleEditOutlineClick = () => {
+
+  const outlineModifyRef = ref<InstanceType<typeof OutlineModify> | null>(null)
+
+  openDialog({
+    title: '编辑大纲',
+    message: () => h(OutlineModify, {
+      ref: outlineModifyRef,
+      data: outlineContent.value
+    }),
+    onConfirm: async () => {
+      if (!outlineModifyRef.value?.isVacancy()) {
+        showToast('请输入完整内容')
+        return
+      }
+      const content = outlineModifyRef.value?.getContent() || ''
+      outlineContent.value = content
+      emit('edit-confirm', content)
+      closeDialog()
+    }
+  })
 }
 
-onMounted(()=>{
-  generateOutlineContent()
+const handleConfirmClick = () => {
+  emit('confirm', outlineContent.value)
+}
+
+onMounted(() => {
+  if (isEmpty(props.data)) {
+    generateOutlineContent()
+  }
+})
+
+watchEffect(() => {
+  if (!isEmpty(props.data)) {
+    outlineContent.value = props.data
+  }
 })
 
 </script>
@@ -88,12 +119,11 @@ onMounted(()=>{
     <div class="mb-2">
       <span>大纲生成</span>
     </div>
-    <div
-      class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
-    >
+    <div class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm">
       {{ outlineContent }}
     </div>
     <div
+      v-if="(!mutual.generate)"
       class="mt-3 flex justify-between"
     >
       <div
@@ -111,6 +141,7 @@ onMounted(()=>{
           size="small"
           round
           type="default"
+          @click="handleEditOutlineClick"
         >
           &nbsp;&nbsp;&nbsp;编辑大纲&nbsp;&nbsp;&nbsp;
         </Button>
@@ -120,11 +151,10 @@ onMounted(()=>{
           size="small"
           @click="handleConfirmClick"
         >
-          &nbsp;&nbsp;&nbsp;&nbsp;立即生成小说&nbsp;&nbsp;&nbsp;&nbsp;
+          &nbsp;&nbsp;立即生成小说&nbsp;&nbsp;
         </Button>
       </div>
     </div>
   </div>
 </template>
-<style>
-</style>
+<style></style>

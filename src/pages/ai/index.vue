@@ -79,7 +79,10 @@ watchEffect(() => {
       teleport="body"
       @opened="handlePopupOpened"
     >
-      <HistoryChat ref="historyChatRef" />
+      <HistoryChat
+        ref="historyChatRef"
+        @record="(showPopup = false)"
+      />
     </Popup>
   </div>
 </template>

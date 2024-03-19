@@ -4,6 +4,7 @@ import { DialogData, DialogType } from './types'
 import ChatInfo from './ChatInfo.vue'
 import { Button, ButtonProps, showToast } from 'vant'
 import { isEmpty, isString } from 'lodash'
+import { onMounted } from 'vue'
 
 export interface ChatDialogProps {
   data?: DialogData,
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
 
 const emit = defineEmits<{
   (e: 'confirm', data: Pick<DialogData, 'type' | 'content'>): void
+  (e: 'mounted'): void
 }>()
 
 const mutualButtonMap: MutualButtonMap = {
@@ -56,6 +58,10 @@ const handleConfirmPlotClick = () => {
     content
   })
 }
+
+onMounted(()=>{
+  emit('mounted')
+})
 
 </script>
 <template>

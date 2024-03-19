@@ -2,7 +2,7 @@
 import { computed, ref, h, onMounted, reactive } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import BackgroundSetting, { type BackgroundSettingData } from './BackgroundSetting.vue'
+import BackgroundModify from './BackgroundModify.vue'
 import { isEmpty } from 'lodash'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
@@ -12,6 +12,7 @@ export interface BackgroundGenerationProps {
   data?: string
   selected?: number
   novelId?: number
+  disabled?: boolean
   keyword?: string
 }
 
@@ -19,7 +20,8 @@ const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
   data: '',
   selected: -1,
   novelId: -1,
-  keyword: ''
+  keyword: '',
+  disabled: true
 })
 
 const emit = defineEmits<{
@@ -27,7 +29,7 @@ const emit = defineEmits<{
   (e: 'confirm', data: { allContent: string, content: string, selected: number }): void
 }>()
 
-const { openDialog } = useBaseDialog()
+const { openDialog, closeDialog } = useBaseDialog()
 
 const backgroundContent = ref(props.data)
 
@@ -40,7 +42,7 @@ const esp = ref<EventSourcePolyfill | null>(null)
 const selected = ref(props.selected)
 
 const mutual = reactive({
-  connect: false
+  generate: false
 })
 
 // 生成背景
@@ -53,11 +55,13 @@ const generateBackground = () => {
 
   esp.value?.close()
 
-  mutual.connect = true
+  mutual.generate = true
 
   backgroundContent.value = ''
 
-  const url = `${import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}`
+  const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
+
+  const url = `${apiUrl}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}`
 
   esp.value = new EventSourcePolyfill(url)
 
@@ -69,7 +73,7 @@ const generateBackground = () => {
   esp.value.addEventListener('error', () => {
     esp.value?.close()
     esp.value = null
-    mutual.connect = false
+    mutual.generate = false
   })
 
 }
@@ -78,7 +82,7 @@ const generateBackground = () => {
 const handleSelectBackgroundClick = (index: number) => {
 
   // 没有生成行为 和 props.data 没有内容
-  if (mutual.connect || !isEmpty(props.data)) return
+  if (mutual.generate || props.disabled) return
 
   selected.value = selected.value === index ? -1 : index
 }
@@ -103,17 +107,23 @@ const handleConfirmClick = () => {
     return
   }
 
-  const backgroundSettingInst = ref<InstanceType<typeof BackgroundSetting> | null>(null)
+  const backgroundModifyRef = ref<InstanceType<typeof BackgroundModify> | null>(null)
 
   openDialog({
     title: '背景设定',
-    message: () => h(BackgroundSetting, {
+    message: () => h(BackgroundModify, {
       data: backgroundList.value[selected.value],
-      ref: backgroundSettingInst
+      ref: backgroundModifyRef
     }),
 
-    onConfirm: () => {
-      let content = backgroundSettingInst.value?.data.titleContent
+    onConfirm: async () => {
+
+      if (!backgroundModifyRef.value?.isVacancy()) {
+        showToast('请填写完整内容')
+        return
+      }
+
+      let content = backgroundModifyRef.value?.getContent().titleContent
       if (selected.value !== backgroundList.value.length - 1) {
         content += '\n\n'
       }
@@ -121,9 +131,10 @@ const handleConfirmClick = () => {
 
       emit('confirm', {
         allContent: backgroundList.value.join(''),
-        content: backgroundSettingInst.value?.data.content || '',
+        content: backgroundModifyRef.value?.getContent().content || '',
         selected: selected.value
       })
+      closeDialog()
     }
   })
 
@@ -160,7 +171,7 @@ watchEffect(() => {
         class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm "
         :class="{
           'outline outline-primary': (selected === index),
-          '!outline-primary/50': (!mutual.connect || isEmpty(props.data))
+          '!outline-primary/50': props.disabled
         }"
         @click="handleSelectBackgroundClick(index)"
       >
@@ -168,7 +179,7 @@ watchEffect(() => {
       </div>
     </div>
     <div
-      v-if="(!mutual.connect && isEmpty(props.data))"
+      v-if="(!mutual.generate && !props.disabled)"
       class="mt-3 flex justify-between"
     >
       <div

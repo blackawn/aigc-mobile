@@ -10,18 +10,19 @@ import OutlineInfo from './component/OutlineInfo.vue'
 import OutlineGeneration from './component/OutlineGeneration.vue'
 import ChapterGeneration from './component/ChapterGeneration.vue'
 import Api from '@/api'
-import { EventSourcePolyfill } from 'event-source-polyfill'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
 import { last, isEmpty } from 'lodash'
 import { onMounted } from 'vue'
 
 interface NovelGenerationProps {
+  guide?: Array<DialogData>
   data: Array<DialogData>
   novelId: number
 }
 
 const props = withDefaults(defineProps<NovelGenerationProps>(), {
+  guide: () => [],
   data: () => [],
   novelId: -1
 })
@@ -32,20 +33,11 @@ const emit = defineEmits<{
 
 const chatDialogData = ref<Array<DialogData>>([...props.data])
 
-const mutualData = reactive<{
-  outlineInfoData: Array<SummaryData>
-}>({
-  outlineInfoData: []
-})
+const outlineInfoList = ref<Array<SummaryData>>([])
 
 const novelId = ref<number>(props.novelId)
 
 const lastDialog = computed(() => last(chatDialogData.value))
-
-/**
- * outlineGeneration
- */
-const olGenerateTempElem = ref<HTMLElement | null>(null)
 
 // 更改会话内容
 const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: number) => {
@@ -125,7 +117,7 @@ const handleConfirmBackgroundContentClick = (data: { allContent: string, content
     content: data.allContent
   })
 
-  mutualData.outlineInfoData.push({
+  outlineInfoList.value.push({
     title: '背景设定',
     id: 'background',
     content: data.content
@@ -160,7 +152,7 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     roleStyleInfo: data
   })
 
-  mutualData.outlineInfoData.push({
+  outlineInfoList.value.push({
     title: '角色',
     id: 'role',
     content: content.slice(0, -1)
@@ -183,14 +175,22 @@ const handleConfirmOutlineInfoClick = () => {
     role: 'gpt',
     type: 'outlineGeneration',
     novelId: novelId.value
-  }).then(()=>{
-
   })
 }
 
 // 生成小说
-const handleConfirmChapterGenerationClick = () => {
+const handleConfirmChapterGenerationClick = (content: string) => {
+  modifyDialog('outlineGeneration', {
+    content
+  })
 
+  addDialog({
+    content: '',
+    role: 'gpt',
+    type: 'chapterGeneration',
+    chapter: 1,
+    novelId: novelId.value
+  })
 }
 
 // 聊天框按钮交互点击
@@ -212,7 +212,7 @@ const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>)
       title: `小说生成 - ${data.content}`
     })
 
-    mutualData.outlineInfoData[0] = {
+    outlineInfoList.value[0] = {
       title: '小说题材',
       id: 'theme',
       content: data.content
@@ -234,7 +234,7 @@ const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>)
       role: 'user',
       type: 'writingStyleAnswer'
     }, 0).then(() => {
-      mutualData.outlineInfoData.push({
+      outlineInfoList.value.push({
         title: '文风',
         id: 'writingStyle',
         content: data.content
@@ -246,7 +246,7 @@ const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>)
         role: 'gpt',
         type: 'summary',
         outline: true,
-        summaryList: mutualData.outlineInfoData
+        summaryList: outlineInfoList.value
       })
     })
   }
@@ -263,7 +263,7 @@ const handleChatMutualMultipleConfirmClick = (data: Pick<DialogData, 'type' | 'c
       type: 'plotAnswer'
     }).then(() => {
 
-      mutualData.outlineInfoData.push({
+      outlineInfoList.value.push({
         title: '情节',
         id: 'plot',
         content: data.content
@@ -287,6 +287,21 @@ const getDialogMutualStatus = (type: DialogType) => {
     (type === 'plot' && lastDialog.value?.type !== 'plot') ||
     // 文风
     (type === 'writingStyle' && lastDialog.value?.type !== 'writingStyle')
+}
+
+// 保存会话信息
+const savaChatDialogList = () => {
+
+  const data = {
+    guide: props.guide,
+    dialog: chatDialogData.value,
+  }
+
+  Api.novel.saveChatDialogList({
+    novel_id: novelId.value,
+    content: JSON.stringify(data),
+    type: 'sys'
+  })
 }
 
 watchEffect(() => {
@@ -322,10 +337,12 @@ defineExpose({
         disabled: getDialogMutualStatus(dialog.type)
       }"
       @button="handleChatMutualButtonClick"
+      @mounted="savaChatDialogList"
     />
     <ChatInfo
       v-else-if="(['background', 'themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
       :data="dialog"
+      @mounted="savaChatDialogList"
     />
     <BackgroundGeneration
       v-else-if="(dialog.type === 'backgroundGeneration')"
@@ -333,11 +350,12 @@ defineExpose({
       :selected="dialog.selected"
       :novel-id="dialog.novelId"
       :keyword="dialog.keyword"
+      :disabled="(lastDialog?.type !== 'backgroundGeneration')"
       @confirm="handleConfirmBackgroundContentClick"
     />
     <RoleGeneration
       v-else-if="(dialog.type === 'role')"
-      :allow-mutual="(lastDialog?.type === 'role')"
+      :disabled="(lastDialog?.type !== 'role')"
       :data="dialog.roleStyleInfo"
       @confirm="handleConfirmRoleListClick"
     />
@@ -363,7 +381,12 @@ defineExpose({
       }"
       @confirm="handleChatMutualMultipleConfirmClick"
     />
-    <!-- <ChapterGeneration /> -->
+    <ChapterGeneration
+      v-else-if="(dialog.type === 'chapterGeneration')"
+      :data="dialog.content"
+      :chapter="dialog.chapter"
+      :novel-id="dialog.novelId"
+    />
   </template>
 </template>
 <style></style>

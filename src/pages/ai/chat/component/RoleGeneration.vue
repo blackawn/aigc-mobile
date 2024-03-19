@@ -12,7 +12,7 @@ import { watchEffect } from 'vue'
 
 interface RoleGenerationProps {
   data?: Array<RoleStyleInfoData>
-  allowMutual?: boolean
+  disabled?: boolean
 }
 
 const emit = defineEmits<{
@@ -32,7 +32,7 @@ const defaultRole: RoleStyleInfoData = {
 
 const props = withDefaults(defineProps<RoleGenerationProps>(), {
   data: () => [],
-  allowMutual: false
+  disabled: true
 })
 
 const roleList = ref<Array<RoleStyleInfoData>>([...props.data])
@@ -82,7 +82,7 @@ const handleRemoveRoleClick = (index: number) => {
   roleList.value.splice(index, 1)
 }
 
-const handleNextClick = () => {
+const handleConfirmClick = () => {
   const isVacancy = roleList.value.every((item) => !isEmpty(item.name.trim()) && !isEmpty(item.character))
 
   if (!isVacancy) {
@@ -155,7 +155,7 @@ watchEffect(() => {
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
     <div class="mb-2">
-      <span>好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"下一步"。</span>
+      <span>好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。填写后点击"确认"。</span>
     </div>
     <div class="flex flex-col gap-y-4">
       <TransitionGroup
@@ -169,7 +169,7 @@ watchEffect(() => {
           class="relative rounded bg-neutral-100"
         >
           <div
-            v-if="(roleList.length > 1 && props.allowMutual)"
+            v-if="((roleList.length > 1) && !props.disabled)"
             class="absolute -right-1.5 -top-1.5 z-50"
           >
             <div
@@ -183,7 +183,7 @@ watchEffect(() => {
             :label-width="'3.4em'"
             autocomplete="off"
             class="h-full overflow-hidden p-2"
-            :disabled="!props.allowMutual"
+            :disabled="props.disabled"
           >
             <Field
               v-model="item.name"
@@ -198,7 +198,7 @@ watchEffect(() => {
                   v-model="item.sex"
                   direction="horizontal"
                   class="gap-2"
-                  :disabled="!props.allowMutual"
+                  :disabled="props.disabled"
                 >
                   <Radio name="男">
                     男性
@@ -215,7 +215,7 @@ watchEffect(() => {
                   v-model="item.age"
                   direction="horizontal"
                   class="gap-2"
-                  :disabled="!props.allowMutual"
+                  :disabled="props.disabled"
                 >
                   <Radio name="儿童">
                     儿童
@@ -250,16 +250,16 @@ watchEffect(() => {
                       size="medium"
                       class="overflow-hidden text-nowrap"
                       :class="{
-                        '!bg-primary/50': !props.allowMutual
+                        '!bg-primary/50': props.disabled
                       }"
-                      :closeable="props.allowMutual"
+                      :closeable="!props.disabled"
                       @close="handleRemoveFeatureClick(index, feature)"
                     >
                       {{ feature }}
                     </Tag>
                   </TransitionGroup>
                   <Tag
-                    v-if="props.allowMutual"
+                    v-if="!props.disabled"
                     type="success"
                     size="medium"
                     plain
@@ -278,7 +278,7 @@ watchEffect(() => {
       </TransitionGroup>
     </div>
     <div
-      v-if="props.allowMutual"
+      v-if="!props.disabled"
       class="mt-3 flex justify-between"
     >
       <div
@@ -292,9 +292,9 @@ watchEffect(() => {
         type="primary"
         round
         size="small"
-        @click="handleNextClick"
+        @click="handleConfirmClick"
       >
-        &nbsp;&nbsp;下一步&nbsp;&nbsp;
+        &nbsp;&nbsp;确认&nbsp;&nbsp;
       </Button>
     </div>
   </div>
