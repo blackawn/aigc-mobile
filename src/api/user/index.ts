@@ -32,8 +32,6 @@ export const signOut = (): R => {
 // 发送验证码
 export const sendVerifyCode = (params: VerifyCodeParams): R => {
 
-  console.log(import.meta.env.VITE_APP_VERIFY_KEY)
-
   return axiosInstance.post('/user/send_code', {
     ...params,
     key: md5(params.phone + import.meta.env.VITE_APP_VERIFY_KEY + params.phone)

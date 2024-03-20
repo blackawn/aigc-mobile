@@ -18,7 +18,8 @@ const props = withDefaults(defineProps<OutlineGenerationProps>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'edit-confirm', content: string): void
+  (e: 'done', content: string): void
+  (e: 'update', content: string): void
   (e: 'confirm', content: string): void
 }>()
 
@@ -30,6 +31,8 @@ const { openDialog, closeDialog } = useBaseDialog()
 const outlineContent = ref(props.data)
 
 const esp = ref<EventSourcePolyfill | null>(null)
+
+const outlineModifyRef = ref<InstanceType<typeof OutlineModify> | null>(null)
 
 const generateOutlineContent = () => {
 
@@ -57,12 +60,15 @@ const generateOutlineContent = () => {
   })
 
   esp.value.addEventListener('error', () => {
+
+    emit('done', outlineContent.value)
     esp.value?.close()
     esp.value = null
     mutual.generate = false
   })
 }
 
+// 重新生成
 const handleAfreshClick = () => {
   openDialog({
     message: '确定重新生成?',
@@ -72,9 +78,8 @@ const handleAfreshClick = () => {
   })
 }
 
+// 编辑
 const handleEditOutlineClick = () => {
-
-  const outlineModifyRef = ref<InstanceType<typeof OutlineModify> | null>(null)
 
   openDialog({
     title: '编辑大纲',
@@ -89,7 +94,7 @@ const handleEditOutlineClick = () => {
       }
       const content = outlineModifyRef.value?.getContent() || ''
       outlineContent.value = content
-      emit('edit-confirm', content)
+      emit('update', outlineContent.value)
       closeDialog()
     }
   })

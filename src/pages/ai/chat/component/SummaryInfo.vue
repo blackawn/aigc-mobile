@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, h, watchEffect } from 'vue'
+import { ref, h, watchEffect, onMounted } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import OutlineInfoModify from './OutlineInfoModify.vue'
+import SummaryInfoModify from './SummaryInfoModify.vue'
 import Api from '@/api'
 import type { SummaryData } from './types'
 import { isEmpty } from 'lodash'
 
-interface OutlineInfoProps {
+interface SummaryInfoProps {
   data?: Array<SummaryData>
   novelId?: number
   allowMutual?: boolean
 }
 
-const props = withDefaults(defineProps<OutlineInfoProps>(), {
+const props = withDefaults(defineProps<SummaryInfoProps>(), {
   data: () => [],
   novelId: -1,
   allowMutual: false
@@ -21,20 +21,21 @@ const props = withDefaults(defineProps<OutlineInfoProps>(), {
 
 const emit = defineEmits<{
   (e: 'confirm'): void
+  (e: 'mounted'): void
 }>()
 
 const { openDialog } = useBaseDialog()
 
-const outlineInfoList = ref<Array<SummaryData>>([...props.data])
+const summaryInfoList = ref<Array<SummaryData>>([...props.data])
 
-const handleModifyOutlineInfoClick = () => {
+const handleModifySummaryInfoClick = () => {
   openDialog({
-    title: '修改大纲',
-    message: () => h(OutlineInfoModify)
+    title: '修改信息',
+    message: () => h(SummaryInfoModify)
   })
 }
 
-const handleConfirmOutlineInfoClick = async () => {
+const handleConfirmSummaryInfoClick = async () => {
 
   if (props.novelId < 0) {
     showToast('缺少参数')
@@ -58,9 +59,12 @@ const handleConfirmOutlineInfoClick = async () => {
 }
 
 watchEffect(() => {
-  outlineInfoList.value = [...props.data]
+  summaryInfoList.value = [...props.data]
 })
 
+onMounted(()=>{
+  emit('mounted')
+})
 </script>
 <template>
   <div class="rounded-md bg-white p-2.5 text-sm shadow-sm">
@@ -69,7 +73,7 @@ watchEffect(() => {
     </div>
     <div class="mt-0.5 flex flex-col gap-y-2">
       <div
-        v-for="(item, index) in outlineInfoList"
+        v-for="(item, index) in summaryInfoList"
         :key="index"
         class="text-justify"
       >
@@ -86,7 +90,7 @@ watchEffect(() => {
           size="small"
           round
           type="default"
-          @click="handleModifyOutlineInfoClick"
+          @click="handleModifySummaryInfoClick"
         >
           &nbsp;&nbsp;&nbsp;修改&nbsp;&nbsp;&nbsp;
         </Button>
@@ -94,7 +98,7 @@ watchEffect(() => {
           size="small"
           round
           type="primary"
-          @click="handleConfirmOutlineInfoClick"
+          @click="handleConfirmSummaryInfoClick"
         >
           &nbsp;&nbsp;&nbsp;生成&nbsp;&nbsp;&nbsp;
         </Button>

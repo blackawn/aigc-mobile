@@ -1,29 +1,30 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watchEffect, watch } from 'vue'
+import { ref, reactive, computed, watchEffect, nextTick, onMounted } from 'vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
 import ChatInfoMutualMultiple from './component/ChatInfoMutualMultiple.vue'
 import BackgroundGeneration from './component/BackgroundGeneration.vue'
 import RoleGeneration from './component/RoleGeneration.vue'
-import OutlineInfo from './component/OutlineInfo.vue'
+import SummaryInfo from './component/SummaryInfo.vue'
 import OutlineGeneration from './component/OutlineGeneration.vue'
 import ChapterGeneration from './component/ChapterGeneration.vue'
 import Api from '@/api'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
 import { last, isEmpty } from 'lodash'
-import { onMounted } from 'vue'
 
 interface NovelGenerationProps {
-  guide?: Array<DialogData>
+  guide: Array<DialogData>
   data: Array<DialogData>
+  summaryList: Array<SummaryData>
   novelId: number
 }
 
 const props = withDefaults(defineProps<NovelGenerationProps>(), {
   guide: () => [],
   data: () => [],
+  summaryList: () => [],
   novelId: -1
 })
 
@@ -33,7 +34,7 @@ const emit = defineEmits<{
 
 const chatDialogData = ref<Array<DialogData>>([...props.data])
 
-const outlineInfoList = ref<Array<SummaryData>>([])
+const summaryList = ref<Array<SummaryData>>([...props.summaryList])
 
 const novelId = ref<number>(props.novelId)
 
@@ -93,21 +94,21 @@ const addDialog = async (opt: DialogData, time = 500, callback?: () => void) => 
 }
 
 // 输入背景
-const inputBackgroundAnswer = (value: string) => {
+const inputBackgroundAnswer = async (value: string) => {
 
   if (novelId.value) {
-    addDialog({
+    await addDialog({
       content: value,
       role: 'user',
       type: 'backgroundAnswer'
-    }, 0).then(() => {
-      addDialog({
-        content: '',
-        role: 'gpt',
-        keyword: value,
-        novelId: novelId.value,
-        type: 'backgroundGeneration'
-      })
+    }, 0)
+
+    addDialog({
+      content: '',
+      role: 'gpt',
+      keyword: value,
+      novelId: novelId.value,
+      type: 'backgroundGeneration'
     })
   }
 
@@ -115,8 +116,6 @@ const inputBackgroundAnswer = (value: string) => {
 
 // 保存背景
 const doneBackgroundContent = (data: { allContent: string, content: string, selected: number }) => {
-
-  mutual.init = true
 
   modifyDialog('backgroundGeneration', {
     selected: data.selected,
@@ -127,15 +126,15 @@ const doneBackgroundContent = (data: { allContent: string, content: string, sele
 }
 
 // 确认背景
-const handleConfirmBackgroundContentClick = (data: { allContent: string, content: string, selected: number }) => {
+const handleConfirmBackgroundContentClick = async (data: { allContent: string, content: string, selected: number }) => {
 
-  outlineInfoList.value.push({
+  summaryList.value.push({
     title: '背景设定',
     id: 'background',
     content: data.content
   })
 
-  addDialog({
+  await addDialog({
     content: '好的，请告诉我您想要设定的主要角色名称、年龄、性别以及他们的角色特征。',
     role: 'gpt',
     type: 'role',
@@ -146,14 +145,14 @@ const handleConfirmBackgroundContentClick = (data: { allContent: string, content
       age: '青少年',
       character: []
     }]
-  }).then(() => {
-    doneBackgroundContent(data)
   })
+
+  doneBackgroundContent(data)
 
 }
 
 // 确认角色
-const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
+const handleConfirmRoleListClick = async (data: Array<RoleStyleInfoData>) => {
   let content = ''
 
   data.forEach((role) => {
@@ -164,28 +163,25 @@ const handleConfirmRoleListClick = (data: Array<RoleStyleInfoData>) => {
     roleStyleInfo: data
   })
 
-  outlineInfoList.value.push({
+  summaryList.value.push({
     title: '角色',
     id: 'role',
     content: content.slice(0, -1)
   })
 
-  console.log('确认')
-
-  addDialog({
+  await addDialog({
     content: '好的！请告诉我您想要的情节背景、主要事件或冲突，以及您希望故事发展的方向。',
     role: 'gpt',
     type: 'plot'
-  }).then(() => {
-    savaChatDialogList()
   })
+
+  savaChatDialogList()
 
 }
 
-// 确认大纲信息
-const handleConfirmOutlineInfoClick = () => {
+// 确认汇总信息
+const handleConfirmSummaryInfoClick = () => {
 
-  //mutualData.outlineInfoData = [{ 'title': '小说题材', 'id': 'theme', 'content': '都市生活' }, { 'title': '背景设定', 'id': 'background', 'content': '时间：古代；地点：仙界门派；背景：仙界门派是修真界最神秘的存在，他们位于终南山脉之巅。仙界门派的修真者们拥有超凡的法力和惊人的仙术，可以操控自然界的力量。门派中流传着许多神话和传说，有人说门派的始创者是一位半神半仙，曾经与天地之灵达成契约，获得无穷的修炼资源。每个修真者都渴望成为门派的一员，个个都是天之骄子，并为了进入门派展开了你争我夺的争斗。' }, { 'title': '角色', 'id': 'role', 'content': '姓名：丽丽；性别：女；年龄：青少年；角色特征：富豪' }, { 'title': '情节', 'id': 'plot', 'content': '舍生取义' }, { 'title': '文风', 'id': 'writingStyle', 'content': '轻小说风' }]
   addDialog({
     content: '',
     role: 'gpt',
@@ -194,11 +190,20 @@ const handleConfirmOutlineInfoClick = () => {
   })
 }
 
-// 生成小说
-const handleConfirmChapterGenerationClick = (content: string) => {
+// 保存大纲信息
+const doneOutlineContent = (content: string) => {
+
   modifyDialog('outlineGeneration', {
     content
   })
+
+  savaChatDialogList()
+}
+
+// 生成小说
+const handleConfirmChapterGenerationClick = (content: string) => {
+
+  doneOutlineContent(content)
 
   addDialog({
     content: '',
@@ -210,7 +215,7 @@ const handleConfirmChapterGenerationClick = (content: string) => {
 }
 
 // 聊天框按钮交互点击
-const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>) => {
+const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
 
   // 主题选择
   if (data.type === 'theme') {
@@ -228,7 +233,7 @@ const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>)
       title: `小说生成 - ${data.content}`
     })
 
-    outlineInfoList.value[0] = {
+    summaryList.value[0] = {
       title: '小说题材',
       id: 'theme',
       content: data.content
@@ -245,80 +250,76 @@ const handleChatMutualButtonClick = (data: Pick<DialogData, 'type' | 'content'>)
 
   // 文风
   if (data.type === 'writingStyle') {
-    addDialog({
+    await addDialog({
       content: data.content,
       role: 'user',
       type: 'writingStyleAnswer'
-    }, 0).then(() => {
-      outlineInfoList.value.push({
-        title: '文风',
-        id: 'writingStyle',
-        content: data.content
-      })
+    }, 0)
 
-      // 大纲
-      addDialog({
-        content: '',
-        role: 'gpt',
-        type: 'summary',
-        outline: true,
-        summaryList: outlineInfoList.value
-      })
+    summaryList.value.push({
+      title: '文风',
+      id: 'writingStyle',
+      content: data.content
+    })
+
+    // 大纲
+    addDialog({
+      content: '',
+      role: 'gpt',
+      type: 'summary',
+      outline: true,
+      summaryList: summaryList.value
     })
   }
 }
 
 // 聊天框按钮多选交互点击
-const handleChatMutualMultipleConfirmClick = (data: Pick<DialogData, 'type' | 'content'>) => {
+const handleChatMutualMultipleConfirmClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
 
   // 情节选择
   if (data.type === 'plot') {
-    addDialog({
+    await addDialog({
       content: data.content,
       role: 'user',
       type: 'plotAnswer'
-    }).then(() => {
-
-      outlineInfoList.value.push({
-        title: '情节',
-        id: 'plot',
-        content: data.content
-      })
-
-      // 文风选择
-      addDialog({
-        content: '选择您想要的文风。',
-        role: 'gpt',
-        type: 'writingStyle'
-      }).then(() => {
-        savaChatDialogList()
-      })
     })
+
+    summaryList.value.push({
+      title: '情节',
+      id: 'plot',
+      content: data.content
+    })
+
+    // 文风选择
+    await addDialog({
+      content: '选择您想要的文风。',
+      role: 'gpt',
+      type: 'writingStyle'
+    })
+
+    savaChatDialogList()
   }
 }
 
 // 可以交互的按钮
 const getDialogMutualStatus = (type: DialogType) => {
   // 主题选择禁用
-  return (type === 'theme' && !['theme', 'background'].includes((lastDialog.value?.type as string))) ||
+  return (type === 'theme' && !['theme', 'background', 'themeAnswer'].includes((lastDialog.value?.type as string))) ||
     // 情节
-    (type === 'plot' && lastDialog.value?.type !== 'plot') ||
+    (type === 'plot' && !['plot', 'plotAnswer'].includes(lastDialog.value?.type as string)) ||
     // 文风
-    (type === 'writingStyle' && lastDialog.value?.type !== 'writingStyle')
+    (type === 'writingStyle' && !['writingStyleAnswer', 'writingStyle'].includes(lastDialog.value?.type as string))
 }
 
 // 保存会话信息
 const savaChatDialogList = () => {
 
-  console.log(mutual.init)
-
   if (!mutual.init) return
-
-  console.log('保存')
 
   const data = {
     guide: props.guide,
     dialog: chatDialogData.value,
+    summaryList: summaryList.value
   }
 
   Api.novel.saveChatDialogList({
@@ -335,6 +336,7 @@ const modifyMutualInitStatus = (status: boolean) => {
 
 watchEffect(() => {
   chatDialogData.value = [...props.data]
+  summaryList.value = [...props.summaryList]
   novelId.value = props.novelId
 })
 
@@ -344,11 +346,11 @@ watchEffect(() => {
   }
 })
 
-watch(() => chatDialogData.value, (n, o) => {
-  if (n.length !== props.data.length) {
+onMounted(() => {
+  nextTick(() => {
     mutual.init = true
-  }
-}, { immediate: true, deep: true })
+  })
+})
 
 defineExpose({
   inputBackgroundAnswer,
@@ -391,18 +393,21 @@ defineExpose({
       :data="dialog.roleStyleInfo"
       @confirm="handleConfirmRoleListClick"
     />
-    <OutlineInfo
+    <SummaryInfo
       v-else-if="(dialog.type === 'summary')"
       :data="dialog.summaryList"
       :allow-mutual="(lastDialog?.type === 'summary')"
       :novel-id="novelId"
-      @confirm="handleConfirmOutlineInfoClick"
+      @mounted="savaChatDialogList"
+      @confirm="handleConfirmSummaryInfoClick"
     />
     <OutlineGeneration
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
       :novel-id="dialog.novelId"
       :allow-mutual="((lastDialog?.type === 'outlineGeneration') && !isEmpty(lastDialog.content))"
+      @done="doneOutlineContent"
+      @edit-confirm="doneOutlineContent"
       @confirm="handleConfirmChapterGenerationClick"
     />
     <ChatInfoMutualMultiple

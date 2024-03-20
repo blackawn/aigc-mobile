@@ -1,4 +1,4 @@
-import type { DialogData } from '@/pages/ai/chat/component/types'
+import type { DialogData, SummaryData } from '@/pages/ai/chat/component/types'
 
 export interface CreateNovelParams {
   title: string
@@ -64,5 +64,6 @@ export interface GetChatDialogRes {
   content: {
     dialog: Array<DialogData>
     guide: Array<DialogData>
+    summaryList: Array<SummaryData>
   }
 }

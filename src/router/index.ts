@@ -18,7 +18,7 @@ export const routeConfig = [
         component: () => import('@/pages/ai/index.vue'),
         children: [
           {
-            path: '/client/ai/chat',
+            path: '/client/ai/chat/:type?/:id?',
             name: 'chat',
             component: () => import('@/pages/ai/chat/index.vue'),
           },

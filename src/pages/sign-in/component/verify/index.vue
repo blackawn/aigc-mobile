@@ -39,7 +39,6 @@ const handleSendVerifyCode = async () => {
     type: 2
   }).finally(() => mutual.getCode = false)
 
-  console.log(res)
   if (res.code === 0) {
     start()
     showToast('发送成功！请注意接收')

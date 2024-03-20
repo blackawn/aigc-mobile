@@ -130,7 +130,7 @@ const handleDeleteClick = (data: NovelHistoryData) => {
 
 // 记录点击
 const handleRecordClick = (data: NovelHistoryData) => {
-  router.push(`/client/ai/chat?id=${data.novel_id}&type=${data.type}`)
+  router.push(`/client/ai/chat/${data.type}/${data.novel_id}`)
   emit('record')
 }
 

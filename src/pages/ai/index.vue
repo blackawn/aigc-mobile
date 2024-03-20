@@ -27,8 +27,15 @@ const handlePopupOpened = () => {
   historyChatRef.value?.getNovelHistoryList()
 }
 
+const routerCount = ref(0)
+
 watchEffect(() => {
+  
   routeName.value = route.name as string
+
+  if (route.params) {
+    routerCount.value += 1
+  }
 })
 
 </script>
@@ -70,7 +77,7 @@ watchEffect(() => {
       </template>
     </BaseNav>
     <div class="flex-1 overflow-hidden">
-      <RouterView />
+      <RouterView :key="routerCount" />
     </div>
     <Popup
       v-model:show="showPopup"
