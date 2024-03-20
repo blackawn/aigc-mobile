@@ -6,7 +6,7 @@ import { useBaseDialog } from '@/composables/useBaseDialog'
 import { Image, CellGroup, Cell, Button, showToast } from 'vant'
 import { router } from '@/router'
 import Api, { UserRewardInfo } from '@/api'
-import { isEmpty } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { storeUser } from '@/store/user'
 import { numberThousand } from '@/utils//format'
 
@@ -119,7 +119,7 @@ onMounted(() => {
           <div class="ml-3 flex flex-col truncate text-white">
             <div class="my-1 truncate">
               <span
-                v-if="isEmpty(userStore.userInfo)"
+                v-if="isRealEmpty(userStore.userInfo)"
                 class="text-xl active:text-neutral-400"
                 @click="router.push('/sign-in')"
               >立即登录</span>
@@ -130,12 +130,12 @@ onMounted(() => {
             </div>
             <div class="flex items-center">
               <span
-                v-if="(!isEmpty(userStore.userInfo))"
+                v-if="(!isRealEmpty(userStore.userInfo))"
                 class="mr-1.5 rounded px-1 py-[0.075rem] text-ss"
                 :class="userVipStatus.color"
               >{{ userVipStatus.value }}</span>
               <span
-                v-if="(isEmpty(userStore.userInfo))"
+                v-if="(isRealEmpty(userStore.userInfo))"
                 class="truncate text-sm text-neutral-300"
               >登陆体验更多创作功能</span>
               <span

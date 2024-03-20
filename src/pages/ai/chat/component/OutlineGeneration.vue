@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, onBeforeUnmount, h, watchEffect } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount, h, watchEffect, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
-import { isEmpty } from 'lodash'
+import { provideScrollElemToBottom } from '@/provide'
+import { isRealEmpty } from '@/utils/is'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineModify from './OutlineModify.vue'
@@ -10,11 +11,13 @@ import OutlineModify from './OutlineModify.vue'
 interface OutlineGenerationProps {
   data?: string
   novelId?: number
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<OutlineGenerationProps>(), {
   data: '',
-  novelId: -1
+  novelId: -1,
+  disabled: true
 })
 
 const emit = defineEmits<{
@@ -22,6 +25,8 @@ const emit = defineEmits<{
   (e: 'update', content: string): void
   (e: 'confirm', content: string): void
 }>()
+
+const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const mutual = reactive({
   generate: false
@@ -66,6 +71,13 @@ const generateOutlineContent = () => {
     esp.value = null
     mutual.generate = false
   })
+
+  let timer = setInterval(() => {
+    if (!mutual.generate) {
+      clearInterval(timer)
+    }
+    injectScrollElemToBottom?.()
+  }, 1000)
 }
 
 // 重新生成
@@ -104,14 +116,14 @@ const handleConfirmClick = () => {
   emit('confirm', outlineContent.value)
 }
 
-watchEffect(() => {
-  if (!isEmpty(props.data)) {
-    outlineContent.value = props.data
-  }
-})
+// watchEffect(() => {
+//   if (!isRealEmpty(props.data)) {
+//     outlineContent.value = props.data
+//   }
+// })
 
 onMounted(() => {
-  if (isEmpty(props.data)) {
+  if (isRealEmpty(props.data)) {
     generateOutlineContent()
   }
 })
@@ -123,14 +135,17 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
-    <div class="mb-2">
+    <div>
       <span>大纲生成</span>
     </div>
-    <div class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm">
+    <div
+      v-show="!isRealEmpty(outlineContent)"
+      class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
+    >
       {{ outlineContent }}
     </div>
     <div
-      v-if="(!mutual.generate)"
+      v-if="(!mutual.generate && !props.disabled)"
       class="mt-3 flex justify-between"
     >
       <div

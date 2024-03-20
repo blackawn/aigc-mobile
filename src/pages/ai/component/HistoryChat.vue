@@ -4,6 +4,7 @@ import { Search, Button, Divider, Field, showToast, Loading, Empty } from 'vant'
 import { Icon } from '@iconify/vue'
 import Api, { NovelHistoryRes, NovelHistoryData } from '@/api'
 import { isEmpty, every } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { gsap } from 'gsap'
@@ -92,7 +93,7 @@ const handleEditClick = (data: NovelHistoryData) => {
       'onUpdate:modelValue': (v) => value.value = v
     }),
     onConfirm: async () => {
-      if (isEmpty(value.value?.trim())) {
+      if (isRealEmpty(value.value?.trim())) {
         showToast('请输入标题')
         return
       }
@@ -210,7 +211,7 @@ defineExpose({
         :key="item.label"
       >
         <Divider
-          v-if="!isEmpty(item.list)"
+          v-if="!isRealEmpty(item.list)"
           class="!my-2 text-sm"
           content-position="left"
         >

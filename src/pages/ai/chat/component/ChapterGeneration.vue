@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, onBeforeUnmount } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
+import { provideScrollElemToBottom } from '@/provide'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import { isEmpty } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 
 interface OutlineGenerationProps {
@@ -19,6 +20,12 @@ const props = withDefaults(defineProps<OutlineGenerationProps>(), {
   novelId: -1,
   chapter: -1
 })
+
+const emit = defineEmits<{
+  (e: 'done', data: { content: string, lastContent: string, chapter: number }): void
+}>()
+
+const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const mutual = reactive({
   generate: false
@@ -51,14 +58,19 @@ const generateChapterContent = (type?: number) => {
   switch (type) {
     case 0:
       chapterNum.value = 1
-      chapterContent.value = ''
+      chapterContent.value = lastChapterContent.value = ''
       break
     case 1:
-      chapterContent.value = lastChapterContent.value || ''
+      if (chapterNum.value === 1) {
+        chapterContent.value = lastChapterContent.value = ''
+      } else {
+        chapterContent.value = lastChapterContent.value
+      }
       break
     case 2:
       chapterNum.value += 1
       chapterContent.value += '\n\n'
+      lastChapterContent.value = chapterContent.value
       break
   }
 
@@ -73,11 +85,24 @@ const generateChapterContent = (type?: number) => {
   })
 
   esp.value.addEventListener('error', () => {
+
+    emit('done', {
+      content: chapterContent.value,
+      lastContent: lastChapterContent.value,
+      chapter: chapterNum.value
+    })
+
     esp.value?.close()
     esp.value = null
-    lastChapterContent.value = chapterContent.value
     mutual.generate = false
   })
+
+  let timer = setInterval(() => {
+    if (!mutual.generate) {
+      clearInterval(timer)
+    }
+    injectScrollElemToBottom?.()
+  }, 1000)
 }
 
 // 重新生成所有
@@ -106,7 +131,7 @@ const handleGenerateNextChapter = () => {
 }
 
 onMounted(() => {
-  if (isEmpty(props.data)) {
+  if (isRealEmpty(props.data)) {
     generateChapterContent(0)
   }
 })
@@ -121,7 +146,10 @@ onBeforeUnmount(() => {
     <div class="mb-2">
       <span>小说生成</span>
     </div>
-    <div class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm">
+    <div
+      v-show="!isRealEmpty(chapterContent)"
+      class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
+    >
       {{ chapterContent }}
     </div>
 

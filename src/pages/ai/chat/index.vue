@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, provide, computed, watchEffect } from 'vue'
 import type { DialogData, SummaryData } from './component/types'
 import NovelGeneration from './NovelGeneration.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
 import ChatInfo from './component/ChatInfo.vue'
 import InputBox from './component/InputBox.vue'
 import Api from '@/api'
+import { provideScrollElemToBottom } from '@/provide'
 import { parseTime } from '@/utils/format'
 import { useRoute } from 'vue-router'
-import { isEmpty } from 'lodash'
-import { saveChatDialogList } from '@/api/novel'
-import { watchEffect } from 'vue'
+import { isRealEmpty } from '@/utils/is'
+import { reactive } from 'vue'
+import { nextTick } from 'vue'
 
 interface ChatDialogData {
   type: number
@@ -38,6 +39,11 @@ const allowInputBox = computed(() => {
   return (!['background', 'backgroundAnswer', 'themeAnswer'].includes(novelGenerationRef.value?.lastDialog?.type as string))
 })
 
+const mutual = reactive({
+  scrollSmooth: false,
+  autoScroll: false
+})
+
 const getChatDialogList = async (id: number) => {
   const res = await Api.novel.getChatDialogList({
     novel_id: id
@@ -47,6 +53,7 @@ const getChatDialogList = async (id: number) => {
   chatDialogData.value.guide = res.data.content.guide || []
   chatDialogData.value.dialog = res.data.content.dialog || []
   chatDialogData.value.summaryList = res.data.content.summaryList || []
+
 }
 
 const initChatDialog = () => {
@@ -57,6 +64,7 @@ const initChatDialog = () => {
     role: 'gpt',
     type: 'guide'
   })
+
 }
 
 // 添加会话
@@ -151,8 +159,14 @@ watchEffect(() => {
 
 })
 
+provide(provideScrollElemToBottom, scrollElToBottom)
+
 onMounted(() => {
   initChatDialog()
+
+  setTimeout(() => {
+    mutual.scrollSmooth = true
+  }, 3000)
 })
 
 </script>
@@ -164,17 +178,20 @@ onMounted(() => {
     <div
       ref="scrollElem"
       class="flex-1 overflow-x-hidden"
+      :class="{
+        'scroll-smooth': mutual.scrollSmooth
+      }"
     >
       <div class="flex flex-col gap-y-5 p-4">
         <ChatInfoMutual
           :data="chatDialogData.guide[0]"
           :button-props="{
-            disabled: !isEmpty(chatDialogData.guide[1])
+            disabled: !isRealEmpty(chatDialogData.guide[1])
           }"
           @button="handleGuideButtonClick"
         />
         <ChatInfo
-          v-if="!isEmpty(chatDialogData.guide[1])"
+          v-if="!isRealEmpty(chatDialogData.guide[1])"
           :data="chatDialogData.guide[1]"
         />
         <NovelGeneration

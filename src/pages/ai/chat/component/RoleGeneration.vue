@@ -1,25 +1,32 @@
 <script setup lang="ts">
-import { ref, h, watch, nextTick } from 'vue'
+import { ref, h, watchEffect, nextTick, inject } from 'vue'
 import { Form, Field, RadioGroup, Radio, Tag, Button, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
+import { provideScrollElemToBottom } from '@/provide'
 import { gsap } from 'gsap'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import RoleFeature from './RoleFeature.vue'
 import { nanoid } from 'nanoid'
-import { isEmpty, isString } from 'lodash'
+import { isString } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { RoleStyleInfoData } from './types'
-import { watchEffect } from 'vue'
 
 interface RoleGenerationProps {
   data?: Array<RoleStyleInfoData>
   disabled?: boolean
 }
 
+const props = withDefaults(defineProps<RoleGenerationProps>(), {
+  data: () => [],
+  disabled: true
+})
+
 const emit = defineEmits<{
-  (e: 'add'): void
   (e: 'mounted'): void
   (e: 'confirm', data: Array<RoleStyleInfoData>): void
 }>()
+
+const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const { openDialog } = useBaseDialog()
 
@@ -31,19 +38,15 @@ const defaultRole: RoleStyleInfoData = {
   character: []
 }
 
-const props = withDefaults(defineProps<RoleGenerationProps>(), {
-  data: () => [],
-  disabled: true
-})
-
 const roleList = ref<Array<RoleStyleInfoData>>([...props.data])
 
+// 添加特征
 const handleAddFeatureClick = (index: number) => {
 
   const roleFeatureInst = ref<InstanceType<typeof RoleFeature> | null>(null)
 
   openDialog({
-    title: '角色特征(0/5)',
+    title: '角色特征',
     message: () => h(RoleFeature, {
       ref: roleFeatureInst
     }),
@@ -58,6 +61,7 @@ const handleAddFeatureClick = (index: number) => {
 
 }
 
+// 删除特征
 const handleRemoveFeatureClick = (index: number, value: string) => {
   const featureIndex = (roleList.value[index].character as Array<string>).findIndex((item: string) => item === value)
   if (featureIndex !== -1) {
@@ -65,6 +69,7 @@ const handleRemoveFeatureClick = (index: number, value: string) => {
   }
 }
 
+// 添加新角色
 const handleAddNewRoleClick = () => {
 
   if (roleList.value.length >= 5) {
@@ -75,16 +80,18 @@ const handleAddNewRoleClick = () => {
   roleList.value.push({ ...defaultRole, id: nanoid(10) })
 
   nextTick(() => {
-    emit('add')
+    injectScrollElemToBottom?.()
   })
 }
 
+// 删除角色
 const handleRemoveRoleClick = (index: number) => {
   roleList.value.splice(index, 1)
 }
 
+// 确认
 const handleConfirmClick = () => {
-  const isVacancy = roleList.value.every((item) => !isEmpty(item.name.trim()) && !isEmpty(item.character))
+  const isVacancy = roleList.value.every((item) => !isRealEmpty(item.name.trim()) && !isRealEmpty(item.character))
 
   if (!isVacancy) {
     showToast('请填写完整角色信息!')
@@ -96,7 +103,6 @@ const handleConfirmClick = () => {
       ...item,
       character: (item.character as Array<string>).join(',')
     }
-
   })
 
   emit('confirm', formatRoleList)

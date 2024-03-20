@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, h, onMounted, reactive, onBeforeUnmount, watchEffect } from 'vue'
+import { computed, ref, h, onMounted, reactive, onBeforeUnmount, watchEffect, inject } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundModify from './BackgroundModify.vue'
-import { isEmpty } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
+import { provideScrollElemToBottom } from '@/provide'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
 
@@ -24,10 +25,11 @@ const props = withDefaults(defineProps<BackgroundGenerationProps>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update'): void
   (e: 'done', data: { allContent: string, content: string, selected: number }): void
   (e: 'confirm', data: { allContent: string, content: string, selected: number }): void
 }>()
+
+const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -50,7 +52,7 @@ const mutual = reactive({
 // 生成背景
 const generateBackground = () => {
 
-  if ((props.novelId < 0) || isEmpty(props.keyword)) {
+  if ((props.novelId < 0) || isRealEmpty(props.keyword)) {
     showToast('背景生成参数不足')
     return
   }
@@ -69,7 +71,7 @@ const generateBackground = () => {
 
   esp.value.addEventListener('message', (message) => {
     backgroundContent.value += JSON.parse(message.data).content
-    emit('update')
+
   })
 
   esp.value.addEventListener('error', () => {
@@ -84,6 +86,13 @@ const generateBackground = () => {
     esp.value = null
     mutual.generate = false
   })
+  
+  let timer = setInterval(() => {
+    if (!mutual.generate) {
+      clearInterval(timer)
+    }
+    injectScrollElemToBottom?.()
+  }, 1000)
 
 }
 
@@ -148,19 +157,19 @@ const handleConfirmClick = () => {
 }
 
 onMounted(() => {
-  if (isEmpty(props.data)) {
+  if (isRealEmpty(props.data)) {
     generateBackground()
   }
 })
 
-watchEffect(() => {
+// watchEffect(() => {
 
-  if (!isEmpty(props.data)) {
-    backgroundContent.value = props.data
-  }
+//   if (!isRealEmpty(props.data)) {
+//     backgroundContent.value = props.data
+//   }
 
-  selected.value = props.selected
-})
+//   selected.value = props.selected
+// })
 
 onBeforeUnmount(() => {
   esp.value?.close()
@@ -173,7 +182,7 @@ onBeforeUnmount(() => {
       <span>你想选择以下哪个片段作为小说的背景？</span>
     </div>
     <div
-      v-if="!isEmpty(backgroundList)"
+      v-show="!isRealEmpty(backgroundList)"
       class="mt-2 flex flex-col gap-y-2"
     >
       <div

@@ -3,7 +3,7 @@ import { ref, watchEffect } from 'vue'
 import { DialogData, DialogType } from './types'
 import ChatInfo from './ChatInfo.vue'
 import { Button, ButtonProps, showToast } from 'vant'
-import { isEmpty, isString } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { onMounted } from 'vue'
 
 export interface ChatDialogProps {
@@ -48,7 +48,7 @@ const handleButtonSelectClick = (value: string) => {
 }
 
 const handleConfirmPlotClick = () => {
-  if (isEmpty(selectList.value)) {
+  if (isRealEmpty(selectList.value)) {
     showToast('请选择内容')
     return
   }

@@ -8,7 +8,7 @@ import { storeUser } from '@/store/user'
 import { router } from '@/router'
 import Api, { PhoneVerifyCodeSignInParams } from '@/api'
 import { useCountdown } from '@/composables/useCountdown'
-import { isEmpty } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 
 const emit = defineEmits<{
   (e: 'toggle'): void
@@ -119,7 +119,7 @@ const handleSignInClick = async () => {
               type="primary"
               size="small"
               class="!px-4"
-              :disabled="(isActive || mutual.getCode || isEmpty(form.name))"
+              :disabled="(isActive || mutual.getCode || isRealEmpty(form.name))"
               @click="handleSendVerifyCode"
             >
               {{ isActive ? `重新获取${count}秒` : '获取验证码' }}

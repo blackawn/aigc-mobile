@@ -12,7 +12,8 @@ import ChapterGeneration from './component/ChapterGeneration.vue'
 import Api from '@/api'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
-import { last, isEmpty } from 'lodash'
+import { last } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 
 interface NovelGenerationProps {
   guide: Array<DialogData>
@@ -47,7 +48,7 @@ const lastDialog = computed(() => last(chatDialogData.value))
 // 更改会话内容
 const modifyDialog = (type: DialogType, data: Partial<DialogData>, index?: number) => {
 
-  if (!isEmpty(chatDialogData.value)) {
+  if (!isRealEmpty(chatDialogData.value)) {
     // 如果提供了索引参数，则只修改特定索引位置的对象
     if (typeof index === 'number' && index >= 0 && index < chatDialogData.value.length) {
       chatDialogData.value[index] = {
@@ -196,6 +197,14 @@ const doneOutlineContent = (content: string) => {
   modifyDialog('outlineGeneration', {
     content
   })
+
+  savaChatDialogList()
+}
+
+// 保存生成的小说
+const doneChapterContent = (data: { content: string, lastContent: string, chapter: number }) => {
+
+  modifyDialog('chapterGeneration', data)
 
   savaChatDialogList()
 }
@@ -365,6 +374,7 @@ defineExpose({
   >
     <ChatInfoMutual
       v-if="(['theme', 'writingStyle'].includes(dialog.type))"
+      :key="dialog.time"
       :data="dialog"
       :button-props="{
         disabled: getDialogMutualStatus(dialog.type)
@@ -405,7 +415,7 @@ defineExpose({
       v-else-if="(dialog.type === 'outlineGeneration')"
       :data="dialog.content"
       :novel-id="dialog.novelId"
-      :allow-mutual="((lastDialog?.type === 'outlineGeneration') && !isEmpty(lastDialog.content))"
+      :disabled="(lastDialog?.type !== 'outlineGeneration')"
       @done="doneOutlineContent"
       @edit-confirm="doneOutlineContent"
       @confirm="handleConfirmChapterGenerationClick"
@@ -421,8 +431,10 @@ defineExpose({
     <ChapterGeneration
       v-else-if="(dialog.type === 'chapterGeneration')"
       :data="dialog.content"
+      :last-data="dialog.lastContent"
       :chapter="dialog.chapter"
       :novel-id="dialog.novelId"
+      @done="doneChapterContent"
     />
   </template>
 </template>

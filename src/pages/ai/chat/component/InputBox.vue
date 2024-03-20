@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import Vue, { ref } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
-import { isEmpty } from 'lodash'
+import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
-import { customAlphabet } from 'nanoid'
 
 interface InputBoxProps {
   disabled?: boolean
@@ -22,7 +21,7 @@ const emit = defineEmits<{
 
 const send = () => {
 
-  if (isEmpty(value.value.trim())) {
+  if (isRealEmpty(value.value.trim())) {
     showToast('请输入有效内容')
     return
   }
