@@ -21,7 +21,6 @@ const props = withDefaults(defineProps<SummaryInfoProps>(), {
 
 const emit = defineEmits<{
   (e: 'confirm'): void
-  (e: 'mounted'): void
 }>()
 
 const { openDialog } = useBaseDialog()
@@ -62,9 +61,6 @@ watchEffect(() => {
   summaryInfoList.value = [...props.data]
 })
 
-onMounted(()=>{
-  emit('mounted')
-})
 </script>
 <template>
   <div class="rounded-md bg-white p-2.5 text-sm shadow-sm">

@@ -16,13 +16,6 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
   })
 })
 
-const emit = defineEmits<{
-  (e: 'mounted'): void
-}>()
-
-onMounted(() => {
-  emit('mounted')
-})
 </script>
 <template>
   <div

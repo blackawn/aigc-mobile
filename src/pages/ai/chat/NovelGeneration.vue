@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watchEffect, nextTick, onMounted } from 'vue'
+import { ref, computed, watchEffect, inject, watch, nextTick } from 'vue'
 import type { DialogData, DialogType, SummaryData, RoleStyleInfoData } from './component/types'
 import ChatInfo from './component/ChatInfo.vue'
 import ChatInfoMutual from './component/ChatInfoMutual.vue'
@@ -9,6 +9,7 @@ import RoleGeneration from './component/RoleGeneration.vue'
 import SummaryInfo from './component/SummaryInfo.vue'
 import OutlineGeneration from './component/OutlineGeneration.vue'
 import ChapterGeneration from './component/ChapterGeneration.vue'
+import { provideScrollElemToBottom } from '@/provide'
 import Api from '@/api'
 import { parseTime } from '@/utils/format'
 import { nanoid } from 'nanoid'
@@ -29,19 +30,13 @@ const props = withDefaults(defineProps<NovelGenerationProps>(), {
   novelId: -1
 })
 
-const emit = defineEmits<{
-  (e: 'update'): void
-}>()
+const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const chatDialogData = ref<Array<DialogData>>([...props.data])
 
 const summaryList = ref<Array<SummaryData>>([...props.summaryList])
 
 const novelId = ref<number>(props.novelId)
-
-const mutual = reactive({
-  init: false
-})
 
 const lastDialog = computed(() => last(chatDialogData.value))
 
@@ -249,7 +244,7 @@ const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'cont
     }
 
     // 背景选择
-    addDialog({
+    await addDialog({
       content: '好的！请告诉我您希望的小说背景是什么样的，我将会依据此为您生成小说的世界观。请随意描述您希望的背景设定。',
       role: 'gpt',
       type: 'background'
@@ -272,7 +267,7 @@ const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'cont
     })
 
     // 大纲
-    addDialog({
+    await addDialog({
       content: '',
       role: 'gpt',
       type: 'summary',
@@ -280,6 +275,8 @@ const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'cont
       summaryList: summaryList.value
     })
   }
+
+  savaChatDialogList()
 }
 
 // 聊天框按钮多选交互点击
@@ -323,8 +320,6 @@ const getDialogMutualStatus = (type: DialogType) => {
 // 保存会话信息
 const savaChatDialogList = () => {
 
-  if (!mutual.init) return
-
   const data = {
     guide: props.guide,
     dialog: chatDialogData.value,
@@ -338,33 +333,20 @@ const savaChatDialogList = () => {
   })
 }
 
-// 
-const modifyMutualInitStatus = (status: boolean) => {
-  mutual.init = status
-}
-
 watchEffect(() => {
   chatDialogData.value = [...props.data]
   summaryList.value = [...props.summaryList]
   novelId.value = props.novelId
 })
 
-watchEffect(() => {
-  if (chatDialogData.value.length) {
-    requestAnimationFrame(() => emit('update'))
-  }
-})
-
-onMounted(() => {
-  nextTick(() => {
-    mutual.init = true
-  })
-})
+watch(() => chatDialogData.value, (n, o) => {
+  injectScrollElemToBottom?.((isRealEmpty(o?.length) ? 'auto' : 'smooth'))
+},{ deep: true })
 
 defineExpose({
   inputBackgroundAnswer,
   lastDialog,
-  modifyMutualInitStatus
+  savaChatDialogList
 })
 </script>
 <template>
@@ -380,12 +362,10 @@ defineExpose({
         disabled: getDialogMutualStatus(dialog.type)
       }"
       @button="handleChatMutualButtonClick"
-      @mounted="savaChatDialogList"
     />
     <ChatInfo
       v-else-if="(['background', 'themeAnswer', 'backgroundAnswer', 'plotAnswer', 'writingStyleAnswer'].includes(dialog.type))"
       :data="dialog"
-      @mounted="savaChatDialogList"
     />
     <BackgroundGeneration
       v-else-if="(dialog.type === 'backgroundGeneration')"
@@ -408,7 +388,6 @@ defineExpose({
       :data="dialog.summaryList"
       :allow-mutual="(lastDialog?.type === 'summary')"
       :novel-id="novelId"
-      @mounted="savaChatDialogList"
       @confirm="handleConfirmSummaryInfoClick"
     />
     <OutlineGeneration

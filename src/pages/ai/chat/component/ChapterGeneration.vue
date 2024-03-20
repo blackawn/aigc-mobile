@@ -6,6 +6,7 @@ import { provideScrollElemToBottom } from '@/provide'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { isRealEmpty } from '@/utils/is'
 import { EventSourcePolyfill } from 'event-source-polyfill'
+import { useClipboard } from '@vueuse/core'
 
 interface OutlineGenerationProps {
   data?: string
@@ -26,6 +27,10 @@ const emit = defineEmits<{
 }>()
 
 const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
+
+const { copy, copied, isSupported } = useClipboard({
+  legacy: true
+})
 
 const mutual = reactive({
   generate: false
@@ -130,6 +135,14 @@ const handleGenerateNextChapter = () => {
   generateChapterContent(2)
 }
 
+// 复制内容
+const handleCopyClick = async () => {
+  await copy(chapterContent.value)
+  if (copied.value) {
+    showToast('复制成功')
+  }
+}
+
 onMounted(() => {
   if (isRealEmpty(props.data)) {
     generateChapterContent(0)
@@ -139,16 +152,25 @@ onMounted(() => {
 onBeforeUnmount(() => {
   esp.value?.close()
 })
-
 </script>
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
-    <div class="mb-2">
+    <div class="flex items-center justify-between">
       <span>小说生成</span>
+      <div
+        v-show="(!mutual.generate && isSupported)"
+        class="p-0.5 active:text-neutral-400"
+        @click="handleCopyClick"
+      >
+        <Icon
+          icon="uiw:copy"
+          class="text-base"
+        />
+      </div>
     </div>
     <div
       v-show="!isRealEmpty(chapterContent)"
-      class="whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
+      class="mt-2 whitespace-pre-wrap rounded bg-neutral-100 p-2 text-justify text-sm"
     >
       {{ chapterContent }}
     </div>

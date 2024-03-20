@@ -26,7 +26,6 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
 
 const emit = defineEmits<{
   (e: 'confirm', data: Pick<DialogData, 'type' | 'content'>): void
-  (e: 'mounted'): void
 }>()
 
 const mutualButtonMap: MutualButtonMap = {
@@ -58,10 +57,6 @@ const handleConfirmPlotClick = () => {
     content
   })
 }
-
-onMounted(()=>{
-  emit('mounted')
-})
 
 </script>
 <template>

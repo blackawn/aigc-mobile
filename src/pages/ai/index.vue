@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, provide } from 'vue'
 import { Popup } from 'vant'
 import { Icon } from '@iconify/vue'
 import BaseNav from '@/components/BaseNav/index.vue'
 import { useRoute } from 'vue-router'
+import { provideIncreaseRouterCount } from '@/provide'
 import HistoryChat from './component/HistoryChat.vue'
 import { router } from '@/router'
 
@@ -29,15 +30,21 @@ const handlePopupOpened = () => {
 
 const routerCount = ref(0)
 
-watchEffect(() => {
-  
-  routeName.value = route.name as string
+const increaseRouterCount = () => {
+  routerCount.value += 1
+}
 
-  if (route.params) {
+watchEffect(() => {
+  if (route.path) {
     routerCount.value += 1
   }
 })
 
+watchEffect(() => {
+  routeName.value = route.name as string
+})
+
+provide(provideIncreaseRouterCount, increaseRouterCount)
 </script>
 <template>
   <div class="flex h-full flex-col">

@@ -7,6 +7,7 @@ import { isRealEmpty } from '@/utils/is'
 import { provideScrollElemToBottom } from '@/provide'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
+import { useClipboard } from '@vueuse/core'
 
 export interface BackgroundGenerationProps {
   data?: string
@@ -32,6 +33,10 @@ const emit = defineEmits<{
 const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
 
 const { openDialog, closeDialog } = useBaseDialog()
+
+const { copy, copied, isSupported } = useClipboard({
+  legacy: true
+})
 
 const backgroundContent = ref(props.data)
 
@@ -86,7 +91,7 @@ const generateBackground = () => {
     esp.value = null
     mutual.generate = false
   })
-  
+
   let timer = setInterval(() => {
     if (!mutual.generate) {
       clearInterval(timer)
@@ -156,6 +161,14 @@ const handleConfirmClick = () => {
 
 }
 
+// 复制内容
+const handleCopyClick = async () => {
+  await copy(backgroundContent.value)
+  if (copied.value) {
+    showToast('复制成功')
+  }
+}
+
 onMounted(() => {
   if (isRealEmpty(props.data)) {
     generateBackground()
@@ -178,8 +191,18 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="rounded-md bg-white p-3 text-sm shadow-sm">
-    <div>
+    <div class="flex items-center justify-between">
       <span>你想选择以下哪个片段作为小说的背景？</span>
+      <div
+        v-show="(!mutual.generate && isSupported)"
+        class="p-0.5 active:text-neutral-400"
+        @click="handleCopyClick"
+      >
+        <Icon
+          icon="uiw:copy"
+          class="text-base"
+        />
+      </div>
     </div>
     <div
       v-show="!isRealEmpty(backgroundList)"

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { isRealEmpty } from '@/utils/is'
+import { provideIncreaseRouterCount } from '@/provide'
 import { router } from '@/router'
 
 interface InputBoxProps {
@@ -14,6 +15,8 @@ const props = withDefaults(defineProps<InputBoxProps>(), {
 })
 
 const value = ref('')
+
+const injectIncreaseRouterCount = inject(provideIncreaseRouterCount, null)
 
 const emit = defineEmits<{
   (e: 'send', value: string): void
@@ -36,7 +39,12 @@ const onSend = (event: KeyboardEvent) => {
 }
 
 const handleNewChatClick = () => {
-  router.push('/client/ai/chat')
+
+  const path = '/client/ai/chat'
+  if (router.currentRoute.value.path !== path) {
+    router.push(path)
+  }
+  injectIncreaseRouterCount?.()
 }
 
 </script>
