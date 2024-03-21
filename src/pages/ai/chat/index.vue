@@ -11,7 +11,6 @@ import Api from '@/api'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { parseTime } from '@/utils/format'
 import { useRoute } from 'vue-router'
-import { router } from '@/router'
 import { isRealEmpty } from '@/utils/is'
 
 interface ChatDialogData {
@@ -64,7 +63,8 @@ let lastScrollTop = 0
 
 let isAutoScroll = true
 
-const getChatDialogList = async (id: number) => {
+// 请求获取会话框信息
+const getChatDialogListData = async (id: number) => {
   const res = await Api.novel.getChatDialogList({
     novel_id: id
   })
@@ -75,11 +75,12 @@ const getChatDialogList = async (id: number) => {
   chatDialogData.value.summaryList = res.data.content.summaryList || []
 }
 
+// 初始化会话框
 const initChatDialog = () => {
   chatDialogData.value.guide.push({
     avatar: 'icon_avatar',
     time: parseTime(),
-    content: '你好呀\r\n我是未未，你的创作助手\r\n无论你是遇到创作瓶颈，还是需要灵感激发，我都在这里帮助你。一起来创作吧！现在你需要什么帮助呢？',
+    content: '你好呀！\r\n我是未未，你的创作助手\r\n无论你是遇到创作瓶颈，还是需要灵感激发，我都在这里帮助你。一起来创作吧！现在你需要什么帮助呢？',
     role: 'gpt',
     type: 'guide'
   })
@@ -168,6 +169,9 @@ const handleGuideButtonClick = async (data: Pick<DialogData, 'type' | 'content'>
         case 2:
           novelContinueWriteRef.value?.savaChatDialogList()
           break
+        case 3:
+          novelExpandWriteRef.value?.savaChatDialogList()
+          break
       }
     }
 
@@ -193,11 +197,13 @@ const onInputSend = (value: string) => {
 
 }
 
+// 修改输入框可可用状态
 const modifyInputBoxStatus = (status: boolean) => {
   mutual.inputBoxStatus = status
 }
 
-const handleScroll = (e: Event) => {
+// 在有内容加载的时候, 允许往上滚动, 直到滚动到低才会继续执行自动滚动
+const onElScroll = (e: Event) => {
   const target = (e.target as HTMLElement)
 
   if (target.scrollTop < lastScrollTop) {
@@ -231,7 +237,7 @@ watchEffect(() => {
   const id = Number(route.params.id)
   if ((type > 0) && (id > 0)) {
     chatDialogData.value.type = type
-    getChatDialogList(id)
+    getChatDialogListData(id)
   }
 })
 
@@ -245,24 +251,58 @@ onMounted(() => {
 
 </script>
 <template>
-  <div ref="xRef" class="flex h-full flex-col bg-neutral-100">
-    <div ref="scrollElem" class="flex-1 overflow-x-hidden" :class="{
-      'scroll-smooth': mutual.scrollSmooth
-    }" @scroll="handleScroll">
+  <div
+    ref="xRef"
+    class="flex h-full flex-col bg-neutral-100"
+  >
+    <div
+      ref="scrollElem"
+      class="flex-1 overflow-x-hidden"
+      :class="{
+        'scroll-smooth': mutual.scrollSmooth
+      }"
+      @scroll="onElScroll"
+    >
       <div class="flex flex-col gap-y-5 p-4">
-        <ChatInfoMutual :data="chatDialogData.guide[0]" :button-props="{
-          disabled: !isRealEmpty(chatDialogData.guide[1])
-        }" @button="handleGuideButtonClick" />
-        <ChatInfo v-if="!isRealEmpty(chatDialogData.guide[1])" :data="chatDialogData.guide[1]" />
-        <NovelGeneration v-if="(chatDialogData.type === 1)" ref="novelGenerationRef" :data="chatDialogData.dialog"
-          :guide="chatDialogData.guide" :summary-list="chatDialogData.summaryList" :novel-id="novelId" />
-        <NovelContinueWrite v-else-if="(chatDialogData.type === 2)" ref="novelContinueWriteRef"
-          :data="chatDialogData.dialog" :guide="chatDialogData.guide" :novel-id="novelId" />
-        <NovelExpandWrite v-else-if="(chatDialogData.type === 3)" ref="novelExpandWriteRef" :data="chatDialogData.dialog"
-          :guide="chatDialogData.guide" :novel-id="novelId" />
+        <ChatInfoMutual
+          :data="chatDialogData.guide[0]"
+          :button-props="{
+            disabled: !isRealEmpty(chatDialogData.guide[1])
+          }"
+          @button="handleGuideButtonClick"
+        />
+        <ChatInfo
+          v-if="!isRealEmpty(chatDialogData.guide[1])"
+          :data="chatDialogData.guide[1]"
+        />
+        <NovelGeneration
+          v-if="(chatDialogData.type === 1)"
+          ref="novelGenerationRef"
+          :data="chatDialogData.dialog"
+          :guide="chatDialogData.guide"
+          :summary-list="chatDialogData.summaryList"
+          :novel-id="novelId"
+        />
+        <NovelContinueWrite
+          v-else-if="(chatDialogData.type === 2)"
+          ref="novelContinueWriteRef"
+          :data="chatDialogData.dialog"
+          :guide="chatDialogData.guide"
+          :novel-id="novelId"
+        />
+        <NovelExpandWrite
+          v-else-if="(chatDialogData.type === 3)"
+          ref="novelExpandWriteRef"
+          :data="chatDialogData.dialog"
+          :guide="chatDialogData.guide"
+          :novel-id="novelId"
+        />
       </div>
     </div>
-    <InputBox :disabled="disabledInputBox" @send="onInputSend" />
+    <InputBox
+      :disabled="disabledInputBox"
+      @send="onInputSend"
+    />
   </div>
 </template>
 <style></style>

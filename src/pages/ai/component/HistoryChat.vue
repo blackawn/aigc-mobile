@@ -48,7 +48,7 @@ const formatNovelHistoryList = computed(() => {
 const isEmptyList = computed(() => every(novelHistoryList.value, isEmpty))
 
 // 获取历史数据
-const getNovelHistoryList = async (keyword = '') => {
+const getNovelHistoryListData = async (keyword = '') => {
   const res = await Api.novel.getNovelHistory({
     search: keyword
   })
@@ -71,7 +71,7 @@ const handleToggleTopClick = async (data: NovelHistoryData) => {
   }).finally(() => mutual.modify = false)
 
   if (res.code === 0) {
-    getNovelHistoryList()
+    getNovelHistoryListData()
   }
 }
 
@@ -105,7 +105,7 @@ const handleEditClick = (data: NovelHistoryData) => {
 
       if (res.code === 0) {
         closeDialog()
-        getNovelHistoryList()
+        getNovelHistoryListData()
       }
     }
 
@@ -123,7 +123,7 @@ const handleDeleteClick = (data: NovelHistoryData) => {
       })
 
       if (res.code === 0) {
-        getNovelHistoryList()
+        getNovelHistoryListData()
       }
     }
   })
@@ -163,7 +163,7 @@ const onLeave = (el: Element, done: () => void) => {
 }
 
 defineExpose({
-  getNovelHistoryList
+  getNovelHistoryListData
 })
 
 </script>
@@ -175,8 +175,8 @@ defineExpose({
         placeholder="请输入搜索关键词"
         class="flex-1 !py-0 !pl-0 !pr-2"
         autocomplete="off"
-        @click-left-icon="getNovelHistoryList(searchValue)"
-        @search="getNovelHistoryList(searchValue)"
+        @click-left-icon="getNovelHistoryListData(searchValue)"
+        @search="getNovelHistoryListData(searchValue)"
       >
         <template #left-icon>
           <Icon

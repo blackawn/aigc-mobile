@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import DrawInfo from './component/DrawInfo.vue'
+import DrawInfo from './DrawInfo.vue'
+import DrawResult from './DrawResult.vue'
+
+const toggleDrawInterface = ref(true)
 
 </script>
 <template>
@@ -9,7 +12,14 @@ import DrawInfo from './component/DrawInfo.vue'
       ref="scrollElem"
       class="flex-1 overflow-x-hidden"
     >
-      <DrawInfo />
+      <DrawInfo
+        v-show="!toggleDrawInterface"
+        @toggle="(v) => (toggleDrawInterface = v)"
+      />
+      <DrawResult
+        v-show="toggleDrawInterface"
+        @toggle="(v) => (toggleDrawInterface = v)"
+      />
     </div>
   </div>
 </template>

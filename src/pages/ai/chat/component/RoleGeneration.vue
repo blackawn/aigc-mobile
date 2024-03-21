@@ -206,6 +206,7 @@ watchEffect(() => {
                   direction="horizontal"
                   class="gap-2"
                   :disabled="props.disabled"
+                  icon-size="16px"
                 >
                   <Radio name="男">
                     男性
@@ -223,6 +224,7 @@ watchEffect(() => {
                   direction="horizontal"
                   class="gap-2"
                   :disabled="props.disabled"
+                  icon-size="16px"
                 >
                   <Radio name="儿童">
                     儿童

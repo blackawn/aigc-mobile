@@ -42,8 +42,8 @@ export const modifyNovelHistory = (param: ModifyNovelHistoryParams): R => {
  * 删除历史记录
  * @param params 
  */
-export const deleteNovelHistory = (param: number): R => {
-  return axiosInstance.post('/novel/delete', { novel_id: param })
+export const deleteNovelHistory = (id: number): R => {
+  return axiosInstance.post('/novel/delete', { novel_id: id })
 }
 
 /**

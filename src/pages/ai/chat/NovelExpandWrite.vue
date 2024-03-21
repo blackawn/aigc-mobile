@@ -139,7 +139,7 @@ const doneExpandWrite = (content: string) => {
 // 聊天框按钮交互点击
 const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'content'>) => {
 
-  // 主题选择
+  // 扩写选择
   if (data.type === 'expandWriteGuide') {
     chatDialogData.value.push({
       avatar: 'icon_avatar',
@@ -155,14 +155,15 @@ const handleChatMutualButtonClick = async (data: Pick<DialogData, 'type' | 'cont
       title: `小说扩写 - ${data.content}`
     })
 
-    // 背景选择
+    // 扩写内容
     await addDialog({
       content: `好的！您希望我对${data.content.substring(0, 2)}进行扩写，让故事更加跌宕有趣，请输入您目前的小说内容。`,
       role: 'gpt',
       type: 'expandWrite'
     })
-
   }
+
+  savaChatDialogList()
 }
 
 // 可以交互的按钮

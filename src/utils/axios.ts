@@ -16,7 +16,10 @@ axiosInstance.interceptors.request.use((config) => {
 
   config.headers.Authorization = `Bearer ${userStore.token}`
 
-  config.data = { ...configStore.baseParams, ...config.data }
+  config.data = {
+    ...configStore.baseParams,
+    ...config.data
+  }
 
   return config
 }, (error: AxiosError) => {
@@ -32,7 +35,7 @@ axiosInstance.interceptors.response.use((response: AxiosResponse) => {
     if (response.data.code === 10001) {
       router.replace('/sign-in')
     }
-    
+
     return Promise.reject(response.data)
   }
 

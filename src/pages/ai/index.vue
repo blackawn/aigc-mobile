@@ -25,7 +25,7 @@ const handleMineClick = () => {
 }
 
 const handlePopupOpened = () => {
-  historyChatRef.value?.getNovelHistoryList()
+  historyChatRef.value?.getNovelHistoryListData()
 }
 
 const routerCount = ref(0)
@@ -49,6 +49,7 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
 <template>
   <div class="flex h-full flex-col">
     <BaseNav
+      class="shadow-sm"
       @click-left="handleHistoryClick"
       @click-right="handleMineClick"
     >
