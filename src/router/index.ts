@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory  } from 'vue-router'
+import { createRouter, createWebHistory,RouteRecordRaw  } from 'vue-router'
 
-export const routeConfig = [
+export const routeConfig: Array<RouteRecordRaw> = [
   {
     path: '/',
     redirect: '/client'
@@ -15,6 +15,9 @@ export const routeConfig = [
         path: '/client/ai',
         redirect: '/client/ai/chat',
         name: 'ai',
+        meta: {
+          transition: 'slide-right',
+        },
         component: () => import('@/pages/ai/index.vue'),
         children: [
           {
@@ -32,6 +35,9 @@ export const routeConfig = [
       {
         path: '/client/mine',
         name: 'mine',
+        meta: {
+          transition: 'slide-left',
+        },
         component: () => import('@/pages/mine/index.vue')
       }
     ]

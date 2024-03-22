@@ -15,13 +15,45 @@
   }
 }
 
-@layer utilities{
-  .scroll-hidden::-webkit-scrollbar{
+@layer utilities {
+  .scroll-hidden::-webkit-scrollbar {
     @apply hidden
+  }
+
+  .slide-enter-active,
+  .slide-leave-active,
+  .slide-left-enter-active,
+  .slide-left-leave-active,
+  .slide-right-enter-active,
+  .slide-right-leave-active {
+    @apply duration-500 absolute top-0 w-full;
+  }
+
+  .slide-left-enter-from {
+    @apply translate-x-full;
+  }
+
+  .slide-right-enter-from {
+    @apply -translate-x-full;
+  }
+
+  .slide-left-enter-to,
+  .slide-left-leave-from,
+  .slide-right-enter-to,
+  .slide-right-leave-from {
+    @apply translate-x-0;
+  }
+
+  .slide-left-leave-to {
+    @apply -translate-x-full;
+  }
+
+  .slide-right-leave-to {
+    @apply translate-x-full;
   }
 }
 
-@layer components{
+@layer components {
   .custom .van-dialog__message {
     @apply flex flex-col
   }
