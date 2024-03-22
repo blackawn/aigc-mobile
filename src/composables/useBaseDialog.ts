@@ -1,5 +1,5 @@
 import { h } from 'vue'
-import { showDialog, closeDialog, setDialogDefaultOptions,resetDialogDefaultOptions, type DialogOptions, Button } from 'vant'
+import { showDialog, closeDialog, setDialogDefaultOptions, resetDialogDefaultOptions, type DialogOptions, Button } from 'vant'
 
 type ButtonDirection = 'horizontal' | 'vertical'
 
@@ -31,11 +31,15 @@ export const useBaseDialog = () => {
       ...opt,
       showCancelButton: false,
       showConfirmButton: false,
+      className: 'custom',
       message: () => h('div', {
-        class: 'flex flex-col'
+        class: 'flex-1 flex flex-col overflow-hidden'
       }, [
-        message,
         h('div', {
+          class: 'flex-1 overflow-x-hidden'
+        },
+          message
+        ), h('div', {
           class: `flex mt-6 ${buttonDirection === 'horizontal' ? 'gap-x-3 px-4 flex-row-reverse' : 'flex-col px-8 gap-y-3'}`
         }, [h(Button, {
           block: true,
@@ -50,12 +54,11 @@ export const useBaseDialog = () => {
           type: 'default',
           class: 'text-base !border-none !text-neutral-500 !bg-neutral-50',
           'onClick': () => (opt.onCancel && opt.onCancel()) || closeDialog()
-        }, () => (opt.cancelText || '取消'))])
-      ])
+        }, () => (opt.cancelText || '取消'))])])
     })
-    
+
   }
-  
+
   return {
     openDialog,
     closeDialog,

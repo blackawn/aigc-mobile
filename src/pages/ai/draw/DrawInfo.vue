@@ -13,6 +13,8 @@ import style_5 from '@/assets/images/style_5.jpg'
 import style_6 from '@/assets/images/style_6.jpg'
 import style_7 from '@/assets/images/style_7.jpg'
 
+import { NativeEventSource } from 'event-source-polyfill'
+
 interface Style {
   label: string
   image: string
@@ -134,6 +136,23 @@ const handleEngineSelectedClick = (index: number) => {
 const handleRandomStyleClick = () => {
   select.style = -1
   randomStyle.value = sample(styleList.value) as Style
+}
+
+const hs = () => {
+
+const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
+
+let c = ''
+
+const esp = new NativeEventSource(`${apiUrl}/novel/segment?novel_id=${1984}`)
+
+esp.addEventListener('message', (message) => {
+  c += JSON.parse(message.data).content
+})
+
+esp.addEventListener('error', () => {
+  console.log(c)
+})
 }
 
 const handleToggleResultClick = () => {

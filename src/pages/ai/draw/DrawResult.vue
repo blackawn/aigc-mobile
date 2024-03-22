@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, h, onMounted } from 'vue'
 import {
   Checkbox,
   CheckboxGroup,
@@ -10,12 +10,15 @@ import {
   Image,
   Loading,
   Button,
-  Circle
+  Circle,
+  showImagePreview
 } from 'vant'
-import Api, { GetDrawResultDetailRes } from '@/api'
+import Api, { GetDrawResultDetailRes, DrawResultData } from '@/api'
+import { useBaseDialog } from '@/composables/useBaseDialog'
+import ImagesManage from './component/ImagesManage.vue'
 import { NativeEventSource } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
-import { onMounted } from 'vue'
+import { isRealEmpty } from '@/utils/is'
 
 const emit = defineEmits<{
   (e: 'toggle', value: boolean): void
@@ -26,11 +29,11 @@ const drawResultDetailList = ref<GetDrawResultDetailRes>({
   list: []
 })
 
-const roleSelect = ref(['a', 'b', 'c'])
+const novelId = ref(1984)
 
-const imageSettingPopover = ref(false)
+const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
-const previewImage = ref(false)
+const { openDialog } = useBaseDialog()
 
 const imageActionsPopover: Array<PopoverAction> = [
   { text: '多图管理', icon: 'ph:images' },
@@ -75,40 +78,58 @@ const imagesControlList = ref([
   }
 ])
 
-const handleImageSettingClick = (action: PopoverAction, index: number) => {
-  switch (index) {
-    case 1:
-      hs()
-      break
+const selected = ref(false)
+
+const selectedList = ref<Array<number>>([])
+
+const handleImageSettingClick = (actionIndex: number, segmentId: number, index: number) => {
+  switch (actionIndex) {
     case 0:
-      getDrawResultDetailListData()
+      handleImageManageClick(segmentId, index)
+      break
+    case 1:
       break
   }
 }
 
-const a = ref(50)
+const handleImageManageClick = (segmentId: number, index: number) => {
 
-const hs = () => {
+  const imagesManageRef = ref<InstanceType<typeof ImagesManage> | null>(null)
 
-  const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
-
-  let c = ''
-
-  const esp = new NativeEventSource(`${apiUrl}/novel/segment?novel_id=${1984}`)
-
-  esp.addEventListener('message', (message) => {
-    c += JSON.parse(message.data).content
+  openDialog({
+    title: '选择图片',
+    message: () => h(ImagesManage, {
+      ref: imagesManageRef,
+      novelId: novelId.value,
+      segmentId
+    }),
+    onConfirm: () => {
+      const url = imagesManageRef.value?.imageSelected
+      if (!isRealEmpty(url)) {
+        drawResultDetailList.value.list[index].imageUrl = url as string
+      }
+    }
   })
+}
 
-  esp.addEventListener('error', () => {
-    console.log(c)
+const handlePreviewImageClick = (index: number) => {
+
+  const imagePreviewList = drawResultDetailList.value.list
+    .filter((item) => !isRealEmpty(item.imageUrl))
+    .map((d) => (`${d.imageUrl}${imageResize}`))
+
+  showImagePreview({
+    images: imagePreviewList,
+    closeable: true,
+    startPosition: index,
+    closeOnClickImage: false
   })
 }
 
 ///////////////////
 
 const getDrawResultDetailListData = async () => {
-  const res = await Api.draw.getDrawResultDetail(1982)
+  const res = await Api.draw.getDrawResultDetail(1984)
   drawResultDetailList.value = res.data
 }
 
@@ -116,7 +137,7 @@ const handleToggleGenerateClick = () => {
   emit('toggle', false)
 }
 
-onMounted(()=>{
+onMounted(() => {
   getDrawResultDetailListData()
 })
 
@@ -137,33 +158,21 @@ onMounted(()=>{
         </div>
         <span class="text-sm text-neutral-500">共{{ drawResultDetailList.list.length }}条分镜</span>
       </div>
-      <div class="mt-3 flex flex-col gap-y-4">
+      <div class="mb-40 mt-3 flex flex-col gap-y-4">
         <div
-          v-for="item in drawResultDetailList.list"
-          :key="item.id"
-          class="flex flex-col rounded-md bg-white p-3 shadow-sm"
+          v-for="(result, itemIndex) in drawResultDetailList.list"
+          :key="result.id"
+          class="relative flex flex-col overflow-hidden rounded-md bg-white p-3 shadow-sm"
         >
-          <div class="flex items-center gap-x-3">
-            <div class="shrink-0 self-start">
-              <span class="text-sm">角色</span>
-            </div>
-            <CheckboxGroup
-              v-model="item.is_roles"
-              direction="horizontal"
-              class="gap-x-3 gap-y-1.5"
-              icon-size="16px"
-            >
-              <Checkbox
-                v-for="role in item.roles"
-                :key="role"
-                :name="role"
-                class="!m-0"
-              >
-                <span class="text-sm">{{ role }}</span>
-              </Checkbox>
-            </CheckboxGroup>
+          <div
+            v-show="selected"
+            class="absolute left-0 top-0"
+          >
+            <div class="absolute -left-4 -top-12 h-28 w-14 rotate-45 bg-pink-400" />
+            <span class="absolute left-2 top-1.5 text-white">{{ itemIndex < 9 ? `0${itemIndex + 1}` : itemIndex + 1
+            }}</span>
           </div>
-          <Divider class="!my-3" />
+
           <div>
             <div class="flex items-center justify-between">
               <span class="text-sm">分镜文本</span>
@@ -172,18 +181,20 @@ onMounted(()=>{
               </div>
             </div>
             <div class="mt-2 max-h-28 min-h-20 whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-justify text-sm">
-              {{ item.description }}
+              {{ result.description }}
             </div>
           </div>
-          <Divider class="!my-3" />
-          <div>
+          <Divider
+            v-show="!isRealEmpty(result.imageUrl)"
+            class="!my-3"
+          />
+          <div v-show="!isRealEmpty(result.imageUrl)">
             <div class="flex items-center justify-between">
               <span class="text-sm">图片生成结果</span>
               <Popover
-                v-model:show="imageSettingPopover"
                 :actions="imageActionsPopover"
                 placement="bottom-end"
-                @select="handleImageSettingClick"
+                @select="(_, actionIndex) => handleImageSettingClick(actionIndex, result.id, itemIndex)"
               >
                 <template #reference>
                   <div class="p-0.5 active:text-neutral-400">
@@ -208,17 +219,19 @@ onMounted(()=>{
               </Popover>
             </div>
             <div class="mt-2 rounded-md bg-neutral-50 p-3">
-              <Image
-                class="size-full"
-                :src="item.imageUrl"
-              >
-                <template #loading>
-                  <Loading
-                    type="spinner"
-                    size="20"
-                  />
-                </template>
-              </Image>
+              <div @click="handlePreviewImageClick(itemIndex)">
+                <Image
+                  class="size-full"
+                  :src="`${result.imageUrl}${imageResize}`"
+                >
+                  <template #loading>
+                    <Loading
+                      type="spinner"
+                      size="20"
+                    />
+                  </template>
+                </Image>
+              </div>
               <!-- <div class="flex h-36 items-center justify-center">
                 <Circle
                   v-model:current-rate="a"
@@ -231,14 +244,14 @@ onMounted(()=>{
             <div class="mt-6 flex justify-center">
               <div class="flex flex-col gap-y-3">
                 <div
-                  v-for="item in imagesControlList"
-                  :key="item.label"
+                  v-for="contr in imagesControlList"
+                  :key="contr.label"
                   class="flex items-center"
                 >
-                  <span class="text-sm">{{ item.label }}</span>
+                  <span class="text-sm">{{ contr.label }}</span>
                   <div class="ml-3 flex gap-x-3">
                     <span
-                      v-for="control in item.control"
+                      v-for="control in contr.control"
                       :key="control.text"
                       class="rounded-md border px-4 py-1 text-sm"
                     >
@@ -257,15 +270,17 @@ onMounted(()=>{
         round
         type="default"
         class="!h-10"
+        block
       >
-        查看生成结果
+        选择
       </Button>
       <Button
         round
-        type="primary"
-        class="!h-10 flex-1"
+        type="success"
+        class="!h-10"
+        block
       >
-        开始绘图
+        生成&nbsp;/&nbsp;重绘
       </Button>
     </div>
   </div>
@@ -274,5 +289,4 @@ onMounted(()=>{
 .van-popover__action {
   @apply px-3 w-auto h-9
 }
-
 </style>

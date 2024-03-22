@@ -17,6 +17,12 @@
 
 @layer utilities{
   .scroll-hidden::-webkit-scrollbar{
-    display: none;
+    @apply hidden
+  }
+}
+
+@layer components{
+  .custom .van-dialog__message {
+    @apply flex flex-col
   }
 }
