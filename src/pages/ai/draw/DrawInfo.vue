@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { Image, Button } from 'vant'
+import { ref, reactive, onMounted, watchEffect, inject } from 'vue'
+import { Image, Button, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { sample } from 'lodash'
+import { storeConfig } from '@/store/config'
+import Api, { SegmentMessage } from '@/api'
+import { storeMutual } from '@/store/mutual'
+import { isRealEmpty } from '@/utils/is'
 
 import style_0 from '@/assets/images/style_0.jpg'
 import style_1 from '@/assets/images/style_1.jpg'
@@ -14,10 +18,18 @@ import style_6 from '@/assets/images/style_6.jpg'
 import style_7 from '@/assets/images/style_7.jpg'
 
 import { NativeEventSource } from 'event-source-polyfill'
+import { watch } from 'vue'
+
+interface DrawResultProps {
+  content?: string
+  result?: boolean
+}
 
 interface Style {
   label: string
   image: string
+  value?: number
+  description?: string
 }
 
 interface Size {
@@ -27,13 +39,29 @@ interface Size {
 
 interface Engine {
   label: string
+  value: number
 }
+
+const props = withDefaults(defineProps<DrawResultProps>(), {
+  content: '',
+  result: false
+})
 
 const emit = defineEmits<{
   (e: 'toggle', value: boolean): void
+  (e: 'toggle', value: boolean): void
 }>()
 
-const content = ref('')
+const configStore = storeConfig()
+
+const mutualStore = storeMutual()
+
+const content = ref(props.content)
+
+const mutual = reactive({
+  result: false,
+  generate: false
+})
 
 const styleList = ref<Array<Style>>([
   {
@@ -106,17 +134,26 @@ const sizeList = ref<Array<Size>>([
 
 const engineList = ref<Array<Engine>>([
   {
-    label: 'DALL-E'
+    label: 'DALL-E',
+    value: 1
   },
   {
-    label: 'Midjourney'
+    label: 'Midjourney',
+    value: 2
   }
 ])
 
+// 从我的小说获取内容点击
+const handleSelectFromHistoryChatClick = () => {
+  mutualStore.modifyWantNovelIdStatus(true)
+}
+
+// 清空点击
 const handleClearClick = () => {
   content.value = ''
 }
 
+// 风格选择点击
 const handleStyleClick = (index: number) => {
   select.style = index
   randomStyle.value = {
@@ -125,11 +162,11 @@ const handleStyleClick = (index: number) => {
   }
 }
 
-const handleSizeSelectedClick = (index: number) => {
+const handleSizeSelectClick = (index: number) => {
   select.size = index
 }
 
-const handleEngineSelectedClick = (index: number) => {
+const handleEngineSelectClick = (index: number) => {
   select.engine = index
 }
 
@@ -138,26 +175,175 @@ const handleRandomStyleClick = () => {
   randomStyle.value = sample(styleList.value) as Style
 }
 
-const hs = () => {
+// 处理分镜内容
+const formatSegmentContent = (content: string) => {
+  const contentArray = content.split('\n\n')
+  let splitArray: Array<string> = []
+  contentArray.forEach(item => {
+    if (item.indexOf('场景：') > -1) {
+      splitArray.push(item)
+    }
+  })
+  let messages: Array<SegmentMessage> = []
+  splitArray.forEach(item => {
+    const message: SegmentMessage = {
+      scene: '',
+      description: '',
+      roles: [],
+      is_roles: [],
+      ratio: sizeList.value[select.size].label,
+      style_id: randomStyle.value.value || styleList.value[select.style].value,
+      is_draw: false,
+      ready_draw: false,
+      checked: false,
+    }
+    const splitAllArr = item.substring(item.indexOf(' ') + 1, item.length).split('\n')
+    const splitArr = splitAllArr.filter((e: string) => e.indexOf('场景：') > -1 || e.indexOf('描述：') > -1 || e.indexOf('人物：') > -1)
+    message.scene = splitArr[0].split('：')[1]
+    message.description = splitArr[1].split('：')[1]
+    if (splitArr.length < 3) {
+      message.roles = []
+    } else {
+      if (splitArr[2].indexOf('：') == -1) {
+        message.roles = []
+      } else {
+        const midArr = splitArr[2].split('：')
+        if (midArr[1].indexOf('、') != -1) {
+          message.roles = midArr[1].split('、')
+        } else if (midArr[1].indexOf(',') != -1) {
+          message.roles = midArr[1].split(',')
+        } else if (midArr[1].indexOf('，') != -1) {
+          message.roles = midArr[1].split('，')
+        } else if (midArr[1].indexOf(';') != -1) {
+          message.roles = midArr[1].split(';')
+        } else if (midArr[1].indexOf('；') != -1) {
+          message.roles = midArr[1].split('；')
+        } else {
+          message.roles = [midArr[1]]
+        }
+      }
+    }
+    message.is_roles = message.roles
+    message.is_draw = false
+    message.ready_draw = false
+    message.checked = false
+    messages.push(message)
+  })
 
-const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
-
-let c = ''
-
-const esp = new NativeEventSource(`${apiUrl}/novel/segment?novel_id=${1984}`)
-
-esp.addEventListener('message', (message) => {
-  c += JSON.parse(message.data).content
-})
-
-esp.addEventListener('error', () => {
-  console.log(c)
-})
+  return messages
 }
 
+// 分镜生成点击
+const handleGenerateSegmentClick = async () => {
+
+  if (content.value.trim().length < 10) {
+    showToast('内容字数生成少于10字')
+    return
+  }
+
+  mutual.generate = true
+
+  const createRes = await Api.novel.createNovel({
+    title: '小说配图',
+    type: 4
+  })
+
+  if (createRes.code === 0) {
+
+    const id = createRes.data.novel_id
+
+    await Api.novel.editNovelContent({
+      novel_id: id,
+      content: content.value,
+      type: 4
+    })
+
+    const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
+
+    let segmentContent = ''
+
+    const esp = new NativeEventSource(`${apiUrl}/novel/segment?novel_id=${id}&message_id=1`)
+
+    esp.addEventListener('message', (message) => {
+      segmentContent += JSON.parse(message.data).content
+    })
+
+    esp.addEventListener('error', async () => {
+
+      console.log(segmentContent)
+
+      const messages = formatSegmentContent(segmentContent)
+
+      if (isRealEmpty(messages)) {
+        showToast('未生成有效分镜，请重试')
+        mutual.generate = false
+        return
+      }
+
+      const res = await Api.draw.saveSegment({
+        novel_id: id,
+        messages,
+        chapter: 1
+      }).finally(() => mutual.generate = false)
+
+      if (res.code === 0) {
+        emit('toggle', true)
+      }
+    })
+
+  }
+
+}
+
+// 设置风格Id
+const setStyleListValue = () => {
+  styleList.value.forEach((item, index) => {
+    const relation = configStore.configList.find((v) => ((v.name === item.label) && v.type === 6))
+    if (relation) {
+      styleList.value[index].value = relation.id
+    }
+  })
+}
+
+// 跳转分镜结果
 const handleToggleResultClick = () => {
   emit('toggle', true)
 }
+
+// 获取小说的内容
+const getNovelHistoryContent = async (novelId: number) => {
+  const res = await Api.novel.getNovelContent(novelId).finally(()=>{
+    mutualStore.modifyWantNovelId(-1)
+  })
+
+  if(isRealEmpty(res.data.content.trim())){
+    showToast('该小说内容为空!')
+    return
+  }
+
+  content.value = res.data.content
+}
+
+watchEffect(() => {
+  content.value = props.content
+  mutual.result = props.result
+})
+
+watchEffect(() => {
+  if (configStore.configList) {
+    setStyleListValue()
+  }
+})
+
+watchEffect(() =>  {
+  if (mutualStore.wantNovelId > 0) {
+    getNovelHistoryContent(mutualStore.wantNovelId)
+  }
+})
+
+onMounted(() => {
+  content.value = '小李和小芳还有智明在吃饭'
+})
 
 </script>
 <template>
@@ -173,6 +359,7 @@ const handleToggleResultClick = () => {
             <span class="text-sm leading-none">生成内容</span>
           </div>
           <div
+            v-show="mutual.result"
             class="flex items-center gap-x-1 text-indigo-400 active:text-neutral-400"
             @click="handleToggleResultClick"
           >
@@ -188,11 +375,15 @@ const handleToggleResultClick = () => {
             v-model="content"
             placeholder="请输入您的小说全文"
             rows="7"
+            maxlength="5000"
             class="size-full resize-none whitespace-pre-wrap break-words bg-transparent align-bottom text-sm"
           />
           <div class="mt-2 flex items-end justify-between">
             <div class="flex gap-x-2">
-              <div class="flex items-center gap-x-1 rounded-md border px-1.5 py-1 active:bg-neutral-200">
+              <div
+                class="flex items-center gap-x-1 rounded-md border px-1.5 py-1 active:bg-neutral-200"
+                @click="handleSelectFromHistoryChatClick"
+              >
                 <Icon icon="octicon:sidebar-expand-24" />
                 <span class="text-xs leading-none">从我的小说中选择</span>
               </div>
@@ -224,7 +415,7 @@ const handleToggleResultClick = () => {
           <div
             v-for="(item, index) in styleList"
             :key="item.label"
-            class="relative flex overflow-hidden rounded-lg"
+            class="relative flex justify-center overflow-hidden rounded-lg"
             :class="{
               'outline outline-2 outline-offset-2 outline-primary': (select.style === index)
             }"
@@ -240,7 +431,7 @@ const handleToggleResultClick = () => {
               item.label }}</span>
           </div>
           <div
-            class="relative flex overflow-hidden rounded-lg border"
+            class="relative flex justify-center overflow-hidden rounded-lg border"
             :class="{
               'outline outline-2 outline-offset-2 outline-primary': (randomStyle.label && (select.style === -1))
             }"
@@ -283,7 +474,7 @@ const handleToggleResultClick = () => {
             :class="{
               'border-primary': (select.size === index)
             }"
-            @click="handleSizeSelectedClick(index)"
+            @click="handleSizeSelectClick(index)"
           >
             <div
               class="shrink-0 border-2 border-primary/30"
@@ -319,7 +510,7 @@ const handleToggleResultClick = () => {
             :class="{
               'border-primary': (select.engine === index)
             }"
-            @click="handleEngineSelectedClick(index)"
+            @click="handleEngineSelectClick(index)"
           >
             <span
               class="text-sm"
@@ -336,6 +527,9 @@ const handleToggleResultClick = () => {
         round
         type="primary"
         block
+        :disabled="mutual.generate"
+        :loading="mutual.generate"
+        @click="handleGenerateSegmentClick"
       >
         生成分镜
       </Button>

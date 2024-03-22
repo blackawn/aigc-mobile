@@ -11,5 +11,6 @@ export default {
 }
 
 export * from './user/types'
+export * from './config/types'
 export * from './novel/types'
 export * from './draw/types'

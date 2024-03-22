@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import Api, { DrawStatus } from '@/api'
+import Api, { SegmentImagesTask } from '@/api'
 import { Image, Loading, showImagePreview } from 'vant'
 import { Icon } from '@iconify/vue'
+import { isRealEmpty } from '@/utils/is'
 import { computed } from 'vue'
 
 interface ImagesManageProps {
@@ -19,19 +20,19 @@ const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
 const selected = ref(-1)
 
-const drawResultTasList = ref<Array<DrawStatus>>([])
+const drawResultTasList = ref<Array<SegmentImagesTask>>([])
 
-const imagePreviewList = computed(() => {
+const imageList = computed(() => {
   return drawResultTasList.value.map((item) => (item.imageUrl))
 })
 
-const imageSelected = computed(() => imagePreviewList.value[selected.value])
+const imageSelected = computed(() => imageList.value[selected.value])
 
 const getDrawResultTasListData = async () => {
 
   if ((props.novelId < 0) || (props.segmentId < 0)) return
 
-  const res = await Api.draw.getDrawResultTasList({
+  const res = await Api.draw.getSegmentImagesTasList({
     segment_id: props.segmentId,
     novel_id: props.novelId
   })
@@ -45,10 +46,12 @@ const handleImageSelect = (index: number) => {
 
 const handleIImagePreview = (index: number) => {
 
-  const imagePreview = imagePreviewList.value.map((item) => (`${item}${imageResize}`))
+  const imagePreviewList = imageList.value
+    .filter((item) => !isRealEmpty(item))
+    .map((d) => (`${d}${imageResize}`))
 
   showImagePreview({
-    images: imagePreview,
+    images: imagePreviewList,
     startPosition: (selected.value === -1 ? 0 : index),
     closeable: true,
     closeOnClickImage: false
@@ -80,6 +83,7 @@ defineExpose({
       @click="handleImageSelect(index)"
     >
       <Image
+        v-if="!isRealEmpty(item.imageUrl)"
         class="size-full"
         :src="`${item.imageUrl}${imageResize}`"
       >
@@ -90,8 +94,12 @@ defineExpose({
           />
         </template>
       </Image>
+      <span
+        class="absolute bottom-0 left-0 w-full truncate bg-gradient-to-t from-black/90 to-black/5 py-1 text-center text-xs text-white"
+      >{{
+        item.action }}</span>
       <div
-        class="absolute bottom-2 right-2 rounded-md bg-black/35 p-1.5 text-white active:text-neutral-400"
+        class="absolute right-2 top-2 rounded-md bg-black/35 p-1.5 text-white active:text-neutral-400"
         @click.stop="handleIImagePreview(index)"
       >
         <Icon icon="grommet-icons:view" />

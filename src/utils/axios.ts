@@ -2,10 +2,11 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError, CancelToken } from 'ax
 import { showToast } from 'vant'
 import { storeConfig } from '@/store/config'
 import { storeUser } from '@/store/user'
+import store from '@/store'
 import { router } from '@/router'
 
-const configStore = storeConfig()
 const userStore = storeUser()
+const configStore = storeConfig()
 
 export const axiosInstance: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -32,9 +33,9 @@ axiosInstance.interceptors.response.use((response: AxiosResponse) => {
   if (response.data.code !== 0) {
     showToast(response.data.msg)
 
-    if (response.data.code === 10001) {
-      router.replace('/sign-in')
-    }
+    // if (response.data.code === 10001) {
+    //   router.replace('/sign-in')
+    // }
 
     return Promise.reject(response.data)
   }

@@ -109,7 +109,6 @@ const inputContinueWriteAnswer = async (value: string) => {
 
     await Api.novel.editNovelContent({
       content: value,
-      type: 9,
       novel_id: novelId.value
     })
 
@@ -164,7 +163,8 @@ defineExpose({
       :novel-id="novelId"
       :data="dialog.content"
       api-map="/novel/continue"
-      title="续写生成"
+      title="续写生成" 
+      :type="9"
       @done="doneContinueWrite"
     />
   </template>

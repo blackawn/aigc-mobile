@@ -8,6 +8,7 @@ import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { gsap } from 'gsap'
+import { storeMutual } from '@/store/mutual'
 
 const emit = defineEmits<{
   (e: 'record'): void
@@ -16,6 +17,8 @@ const emit = defineEmits<{
 const searchValue = ref('')
 
 const novelHistoryList = ref<NovelHistoryRes | null>(null)
+
+const mutualStore = storeMutual()
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -50,7 +53,8 @@ const isEmptyList = computed(() => every(novelHistoryList.value, isEmpty))
 // 获取历史数据
 const getNovelHistoryListData = async (keyword = '') => {
   const res = await Api.novel.getNovelHistory({
-    search: keyword
+    search: keyword,
+    type: mutualStore.isWantNovelId ? [1] : null
   })
 
   mutual.load = false
@@ -88,7 +92,7 @@ const handleEditClick = (data: NovelHistoryData) => {
       size: 'large',
       autocomplete: 'off',
       placeholder: '请输入标题',
-      class: '!bg-neutral-100',
+      class: '!bg-neutral-100 rounded',
       clearable: true,
       'onUpdate:modelValue': (v) => value.value = v
     }),
@@ -131,11 +135,16 @@ const handleDeleteClick = (data: NovelHistoryData) => {
 
 // 记录点击
 const handleRecordClick = (data: NovelHistoryData) => {
-  router.push(`/client/ai/chat/${data.type}/${data.novel_id}`)
+  if (mutualStore.isWantNovelId) {
+    mutualStore.modifyWantNovelId(data.novel_id)
+  } else {
+    router.push(`/client/ai/chat/${data.type}/${data.novel_id}`)
+  }
   emit('record')
 }
 
 const onBeforeEnter = (el: Element) => {
+  if (mutualStore.isWantNovelId) return
   gsap.to(el, {
     translateX: '-100%',
     duration: 0
@@ -143,6 +152,8 @@ const onBeforeEnter = (el: Element) => {
 }
 
 const onEnter = (el: Element, done: () => void) => {
+
+  if (mutualStore.isWantNovelId) return done()
 
   const elem = el as HTMLElement
   const index = Number(elem.dataset.index)
@@ -156,6 +167,9 @@ const onEnter = (el: Element, done: () => void) => {
 }
 
 const onLeave = (el: Element, done: () => void) => {
+
+  if (mutualStore.isWantNovelId) return done()
+
   gsap.to(el, {
     translateX: '100%',
     onComplete: done
@@ -186,6 +200,7 @@ defineExpose({
         </template>
       </Search>
       <Button
+        v-show="!mutualStore.isWantNovelId"
         size="small"
         type="success"
         class="!px-3"
@@ -219,7 +234,7 @@ defineExpose({
         </Divider>
         <div class="flex flex-col gap-y-1.5">
           <TransitionGroup
-            name="fade"
+            :name="(mutualStore.isWantNovelId ? undefined : 'fade')"
             @before-enter="onBeforeEnter"
             @enter="onEnter"
             @leave="onLeave"
@@ -231,9 +246,9 @@ defineExpose({
               :data-index="index"
             >
               <div
-                class="flex flex-1 items-center truncate "
+                class="flex flex-1 items-center truncate active:text-neutral-400"
                 @click="handleRecordClick(record)"
-              > 
+              >
                 <div class="mr-2 ">
                   <Icon icon="lucide:book-open-text" />
                 </div>

@@ -4,9 +4,10 @@ import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { isRealEmpty } from '@/utils/is'
-import { EventSourcePolyfill } from 'event-source-polyfill'
+import { NativeEventSource, EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useClipboard } from '@vueuse/core'
+import Api from '@/api'
 
 interface contentGenerationProps {
   data?: string
@@ -14,6 +15,7 @@ interface contentGenerationProps {
   disabled?: boolean
   apiMap?: string
   title?: string
+  type?: number
 }
 
 const props = withDefaults(defineProps<contentGenerationProps>(), {
@@ -21,7 +23,8 @@ const props = withDefaults(defineProps<contentGenerationProps>(), {
   novelId: -1,
   disabled: true,
   apiMap: '/novel/continue',
-  title: ''
+  title: '',
+  type: 9
 })
 
 const emit = defineEmits<{
@@ -35,7 +38,6 @@ const { copy, copied, isSupported } = useClipboard({
   legacy: true
 })
 
-
 const mutual = reactive({
   generate: false
 })
@@ -43,7 +45,7 @@ const { openDialog, closeDialog } = useBaseDialog()
 
 const baseContent = ref(props.data)
 
-const esp = ref<EventSourcePolyfill | null>(null)
+const esp = ref<EventSourcePolyfill | EventSource |null>(null)
 
 const generateBaseContent = () => {
 
@@ -64,7 +66,7 @@ const generateBaseContent = () => {
 
   const url = `${apiUrl}${props.apiMap}?novel_id=${props.novelId}&message_id=1`
 
-  esp.value = new EventSourcePolyfill(url)
+  esp.value = new NativeEventSource(url)
 
   injectModifyInputBoxStatus?.(true)
 
@@ -73,18 +75,27 @@ const generateBaseContent = () => {
   })
 
   esp.value.addEventListener('error', () => {
+
+    Api.novel.editNovelContent({
+      novel_id: props.novelId,
+      content: baseContent.value,
+      type: props.type
+    })
+
     emit('done', baseContent.value)
     injectModifyInputBoxStatus?.(false)
     esp.value?.close()
     esp.value = null
     mutual.generate = false
+
+    console.log('error')
   })
 
   let timer = setInterval(() => {
     if (!mutual.generate) {
       clearInterval(timer)
     }
-    injectScrollElemToBottom?.('auto')
+    injectScrollElemToBottom?.()
   }, 1000)
 }
 

@@ -8,6 +8,7 @@ import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineModify from './OutlineModify.vue'
 import { useClipboard } from '@vueuse/core'
+import Api from '@/api'
 
 interface OutlineGenerationProps {
   data?: string
@@ -45,6 +46,7 @@ const esp = ref<EventSourcePolyfill | null>(null)
 
 const outlineModifyRef = ref<InstanceType<typeof OutlineModify> | null>(null)
 
+// 生成大纲内容
 const generateOutlineContent = () => {
 
   if (mutual.generate) return
@@ -71,7 +73,7 @@ const generateOutlineContent = () => {
   })
 
   esp.value.addEventListener('error', () => {
-
+    saveOutlineContent(props.novelId, outlineContent.value)
     emit('done', outlineContent.value)
     esp.value?.close()
     esp.value = null
@@ -93,6 +95,15 @@ const handleAfreshClick = () => {
     onConfirm() {
       generateOutlineContent()
     },
+  })
+}
+
+// 保存大纲内容
+const saveOutlineContent = (novelId: number, content: string) => {
+  Api.novel.editNovelContent({
+    novel_id: novelId,
+    content,
+    type: 3
   })
 }
 
@@ -119,6 +130,7 @@ const handleEditOutlineClick = () => {
 }
 
 const handleConfirmClick = () => {
+  saveOutlineContent(props.novelId, outlineContent.value)
   emit('confirm', outlineContent.value)
 }
 

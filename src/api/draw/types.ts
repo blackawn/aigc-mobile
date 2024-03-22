@@ -1,10 +1,11 @@
+import { editSegment } from '.'
 
-export interface GetDrawResultDetailRes {
-  list: Array<DrawResultData>;
+export interface GetSegmentDetailRes {
+  list: Array<SegmentData>;
   content: string;
 }
 
-export interface DrawResultData {
+export interface SegmentData {
   id: number;
   scene: string;
   description: string;
@@ -22,18 +23,18 @@ export interface DrawResultData {
   draw_progress: string;
   download_status: number;
   type: number;
-  U1: Control;
-  U2: Control;
-  U3: Control;
-  U4: Control;
-  V1: Control;
-  V2: Control;
-  V3: Control;
-  V4: Control;
-  RE: Control;
+  U1: Task;
+  U2: Task;
+  U3: Task;
+  U4: Task;
+  V1: Task;
+  V2: Task;
+  V3: Task;
+  V4: Task;
+  RE: Task;
 }
 
-interface Control {
+interface Task {
   task_id: number | string;
   draw_task_id: number | string;
   imageUrl: string;
@@ -45,16 +46,16 @@ interface Control {
   type: number;
 }
 
-export interface GetDrawResultTasListParams {
+export interface GetSegmentImagesTaskListParams {
   segment_id: number
   novel_id: number
 }
 
-export interface DrawStatusList {
-  list: Array<DrawStatus>;
+export interface SegmentImagesTaskList {
+  list: Array<SegmentImagesTask>;
 }
 
-export interface DrawStatus {
+export interface SegmentImagesTask {
   task_id: string;
   origin_task_id: string;
   action: string;
@@ -64,4 +65,26 @@ export interface DrawStatus {
   draw_status: string;
   draw_progress: string;
   download_status: number;
+}
+
+export interface EditSegmentParams extends SegmentData {
+  novel_id: number
+} 
+
+export interface SaveSegmentParams {
+  novel_id: number
+  chapter: number
+  messages: Array<SegmentMessage>
+} 
+
+export interface SegmentMessage {
+  scene: string;
+  description: string;
+  roles: string[];
+  is_roles: string[];
+  is_draw: boolean;
+  ready_draw: boolean;
+  checked: boolean;
+  ratio?: string;
+  style_id?: number;
 }

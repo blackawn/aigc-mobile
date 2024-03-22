@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, onMounted } from 'vue'
+import { ref, h, onMounted, watchEffect } from 'vue'
 import {
   Checkbox,
   CheckboxGroup,
@@ -11,29 +11,38 @@ import {
   Loading,
   Button,
   Circle,
-  showImagePreview
+  Field,
+  showImagePreview,
+  showToast
 } from 'vant'
-import Api, { GetDrawResultDetailRes, DrawResultData } from '@/api'
+import Api, { GetSegmentDetailRes, SegmentData } from '@/api'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import ImagesManage from './component/ImagesManage.vue'
-import { NativeEventSource } from 'event-source-polyfill'
+
 import { Icon } from '@iconify/vue'
 import { isRealEmpty } from '@/utils/is'
+
+interface DrawResultProps {
+  data?: Array<SegmentData>
+  novelId?: number
+}
+
+const props = withDefaults(defineProps<DrawResultProps>(), {
+  data: () => [],
+  novelId: -1,
+})
 
 const emit = defineEmits<{
   (e: 'toggle', value: boolean): void
 }>()
 
-const drawResultDetailList = ref<GetDrawResultDetailRes>({
-  content: '',
-  list: []
-})
+const drawResultList = ref(props.data)
 
-const novelId = ref(1984)
+const novelId = ref(props.novelId)
 
 const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
-const { openDialog } = useBaseDialog()
+const { openDialog, closeDialog } = useBaseDialog()
 
 const imageActionsPopover: Array<PopoverAction> = [
   { text: '多图管理', icon: 'ph:images' },
@@ -78,11 +87,47 @@ const imagesControlList = ref([
   }
 ])
 
-const selected = ref(false)
+const segmentSelected = ref(false)
 
-const selectedList = ref<Array<number>>([])
+const segmentSelectList = ref<Array<number>>([])
 
-const handleImageSettingClick = (actionIndex: number, segmentId: number, index: number) => {
+// 分镜内容编辑
+const handleSegmentContentEditClick = (content: string, index: number) => {
+
+  const value = ref(content)
+
+  openDialog({
+    title: '编辑分镜文本',
+    message: () => h('textarea', {
+      value: value.value,
+      maxlength: 3000,
+      rows: 6,
+      placeholder: '请输入分镜内容',
+      class: 'rounded bg-neutral-100 size-full resize-none p-3 whitespace-pre-wrap break-words align-bottom text-sm',
+      'onInput': (e) => value.value = (e.target as HTMLTextAreaElement).value
+    }),
+    onConfirm: async () => {
+      if (isRealEmpty(value.value?.trim())) {
+        showToast('请输入内容')
+        return
+      }
+
+      drawResultList.value[index].description = value.value
+
+      const res = await Api.draw.editSegment({
+        novel_id: novelId.value,
+        ...drawResultList.value[index]
+      })
+
+      if (res.code === 0) {
+        closeDialog()
+      }
+    }
+  })
+}
+
+// popover菜单点击
+const handleImageActionsPopoverClick = (actionIndex: number, segmentId: number, index: number) => {
   switch (actionIndex) {
     case 0:
       handleImageManageClick(segmentId, index)
@@ -92,6 +137,7 @@ const handleImageSettingClick = (actionIndex: number, segmentId: number, index: 
   }
 }
 
+// 多图管理点击
 const handleImageManageClick = (segmentId: number, index: number) => {
 
   const imagesManageRef = ref<InstanceType<typeof ImagesManage> | null>(null)
@@ -106,15 +152,16 @@ const handleImageManageClick = (segmentId: number, index: number) => {
     onConfirm: () => {
       const url = imagesManageRef.value?.imageSelected
       if (!isRealEmpty(url)) {
-        drawResultDetailList.value.list[index].imageUrl = url as string
+        drawResultList.value[index].imageUrl = url as string
       }
     }
   })
 }
 
-const handlePreviewImageClick = (index: number) => {
+// 分镜图片预览点击
+const handleSegmentImagePreviewClick = (index: number) => {
 
-  const imagePreviewList = drawResultDetailList.value.list
+  const imagePreviewList = drawResultList.value
     .filter((item) => !isRealEmpty(item.imageUrl))
     .map((d) => (`${d.imageUrl}${imageResize}`))
 
@@ -126,19 +173,14 @@ const handlePreviewImageClick = (index: number) => {
   })
 }
 
-///////////////////
-
-const getDrawResultDetailListData = async () => {
-  const res = await Api.draw.getDrawResultDetail(1984)
-  drawResultDetailList.value = res.data
-}
-
+// 返回分镜
 const handleToggleGenerateClick = () => {
   emit('toggle', false)
 }
 
-onMounted(() => {
-  getDrawResultDetailListData()
+watchEffect(() => {
+  drawResultList.value = props.data
+  novelId.value= props.novelId
 })
 
 </script>
@@ -156,16 +198,16 @@ onMounted(() => {
           />
           <span class="text-sm leading-none">返回分镜</span>
         </div>
-        <span class="text-sm text-neutral-500">共{{ drawResultDetailList.list.length }}条分镜</span>
+        <span class="text-sm text-neutral-500">共{{ drawResultList.length }}条分镜</span>
       </div>
       <div class="mb-40 mt-3 flex flex-col gap-y-4">
         <div
-          v-for="(result, itemIndex) in drawResultDetailList.list"
+          v-for="(result, itemIndex) in drawResultList"
           :key="result.id"
           class="relative flex flex-col overflow-hidden rounded-md bg-white p-3 shadow-sm"
         >
           <div
-            v-show="selected"
+            v-show="segmentSelected"
             class="absolute left-0 top-0"
           >
             <div class="absolute -left-4 -top-12 h-28 w-14 rotate-45 bg-pink-400" />
@@ -176,7 +218,10 @@ onMounted(() => {
           <div>
             <div class="flex items-center justify-between">
               <span class="text-sm">分镜文本</span>
-              <div class="p-0.5 active:text-neutral-400">
+              <div
+                class="p-0.5 active:text-neutral-400"
+                @click="handleSegmentContentEditClick(result.description, itemIndex)"
+              >
                 <Icon icon="lucide:edit" />
               </div>
             </div>
@@ -194,7 +239,7 @@ onMounted(() => {
               <Popover
                 :actions="imageActionsPopover"
                 placement="bottom-end"
-                @select="(_, actionIndex) => handleImageSettingClick(actionIndex, result.id, itemIndex)"
+                @select="(_, actionIndex) => handleImageActionsPopoverClick(actionIndex, result.id, itemIndex)"
               >
                 <template #reference>
                   <div class="p-0.5 active:text-neutral-400">
@@ -219,7 +264,7 @@ onMounted(() => {
               </Popover>
             </div>
             <div class="mt-2 rounded-md bg-neutral-50 p-3">
-              <div @click="handlePreviewImageClick(itemIndex)">
+              <div @click="handleSegmentImagePreviewClick(itemIndex)">
                 <Image
                   class="size-full"
                   :src="`${result.imageUrl}${imageResize}`"

@@ -3,16 +3,25 @@ import { ref } from 'vue'
 import { Tab, Tabs, Button, Field, Tag, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { reactive } from 'vue'
+import { storeConfig } from '@/store/config'
+import Api, { CustomizeFeature } from '@/api'
+import { onMounted } from 'vue'
 
 interface RoleFeatureData {
   figure: Array<string>
   disposition: Array<string>
-  customize: Array<string>
+  customize: Array<CustomizeFeature>
 }
 
-const roleFeatureData = reactive<RoleFeatureData>({
-  figure: ['正太', '萝莉', '美少女', '美少男', '辣妹', '大小姐', '胖子', '伪娘', '御姐', '大叔', '剑客', '道士', '富豪', '侦探', '学生'],
-  disposition: ['乐观豁达', '刚毅坚强', '聪明机智', '笨拙可爱', '善良仁慈', '冷漠孤傲', '勇敢无畏', '狡诈多疑', '狂妄自大', '心机深沉'],
+const configStore = storeConfig()
+
+const figure = configStore.configList.filter((t) => (t.type === 2)).map((item) => item.name)
+
+const disposition = configStore.configList.filter((t) => (t.type === 3)).map((item) => item.name)
+
+const roleFeatureList = reactive<RoleFeatureData>({
+  figure,
+  disposition,
   customize: []
 })
 
@@ -24,6 +33,7 @@ const customizeValue = ref('')
 
 const selectList = ref<Array<string>>([])
 
+// 选择特征点击
 const handleSelectClick = (value: string) => {
 
   const isExistIndex = selectList.value.findIndex((item: string) => item === value)
@@ -38,27 +48,50 @@ const handleSelectClick = (value: string) => {
 
 }
 
-const handleAddCustomizeFeatureClick = () => {
+// 添加自定义特征
+const handleAddCustomizeFeatureClick = async () => {
 
   if (!customizeValue.value.trim()) return
 
-  roleFeatureData.customize.push(customizeValue.value.trim())
-  customizeValue.value = ''
+  const res = await Api.config.createCustomizeFeature(customizeValue.value.trim())
+
+  if (res.code === 0) {
+    getCustomizeFeatureList()
+
+    customizeValue.value = ''
+  }
+
 }
 
+// 自定义特征点击
 const handleCustomizeFeatureClick = (value: string) => {
   if (mutual.edit) return
 
   handleSelectClick(value)
 }
 
-const handleRemoveCustomizeFeatureClick = (value: string) => {
+const handleRemoveCustomizeFeatureClick = async (id: number) => {
+  const res = await Api.config.deleteCustomizeFeature(id)
 
+  if(res.code === 0){
+    getCustomizeFeatureList()
+  }
+}
+
+// 获取自定义特征
+const getCustomizeFeatureList = async () => {
+  const res = await Api.config.getCustomizeFeature()
+
+  roleFeatureList.customize = res.data.list
 }
 
 const setSelected = (data: Array<string>) => {
   selectList.value = data
 }
+
+onMounted(() => {
+  getCustomizeFeatureList()
+})
 
 defineExpose({
   selectList,
@@ -73,9 +106,9 @@ defineExpose({
       line-height="0"
     >
       <Tab title="人物特征">
-        <div class="flex flex-wrap justify-center gap-2 py-3">
+        <div class="grid grid-cols-4 gap-2 py-3">
           <Button
-            v-for="item in roleFeatureData.figure"
+            v-for="item in roleFeatureList.figure"
             :key="item"
             size="small"
             :type="(selectList.includes(item) ? 'primary' : 'default')"
@@ -86,9 +119,9 @@ defineExpose({
         </div>
       </Tab>
       <Tab title="性格特征">
-        <div class="flex flex-wrap justify-center gap-2 py-3">
+        <div class="grid grid-cols-3 gap-2 py-3">
           <Button
-            v-for="item in roleFeatureData.disposition"
+            v-for="item in roleFeatureList.disposition"
             :key="item"
             size="small"
             :type="(selectList.includes(item) ? 'primary' : 'default')"
@@ -128,23 +161,23 @@ defineExpose({
                 {{ mutual.edit ? '取消' : '编辑' }}
               </Button>
             </div>
-            <div class="mt-4 flex flex-wrap justify-center gap-1">
+            <div class="mt-4 grid grid-cols-3 gap-2">
               <Button
-                v-for="item in roleFeatureData.customize"
-                :key="item"
+                v-for="item in roleFeatureList.customize"
+                :key="item.id"
                 size="small"
                 :class="{
                   'pointer-events-none': mutual.edit
                 }"
-                :type="(selectList.includes(item) ? 'primary' : 'default')"
-                @click="handleCustomizeFeatureClick(item)"
+                :type="(selectList.includes(item.name) ? 'primary' : 'default')"
+                @click="handleCustomizeFeatureClick(item.name)"
               >
                 <div class="flex items-center">
-                  <span>{{ item }}</span>
+                  <span>{{ item.name }}</span>
                   <div
                     v-if="mutual.edit"
                     class="pointer-events-auto ml-1 rounded-full p-0.5 active:text-red-400"
-                    @click="handleRemoveCustomizeFeatureClick(item)"
+                    @click="handleRemoveCustomizeFeatureClick(item.id)"
                   >
                     <Icon icon="gridicons:cross" />
                   </div>

@@ -110,7 +110,6 @@ const inputContinueWriteAnswer = async (value: string) => {
 
     await Api.novel.editNovelContent({
       content: value,
-      type: 2,
       novel_id: novelId.value
     })
 
@@ -126,7 +125,8 @@ const inputContinueWriteAnswer = async (value: string) => {
 
 }
 
-// 保存生成的扩写内容
+
+// 保存生成的扩写内容会话
 const doneExpandWrite = (content: string) => {
 
   modifyDialog('expandWriteGeneration', {
@@ -211,6 +211,7 @@ defineExpose({
       :data="dialog.content"
       title="扩写生成"
       api-map="/novel/expand"
+      :type="10"
       @done="doneExpandWrite"
     />
   </template>

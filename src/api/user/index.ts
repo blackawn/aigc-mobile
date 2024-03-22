@@ -1,5 +1,5 @@
 import { axiosInstance } from '@/utils/axios'
-import { R } from '@/api/types'
+import { R } from '../types'
 import type {
   VerifyCodeParams,
   PhoneVerifyCodeSignInParams,

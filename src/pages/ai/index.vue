@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router'
 import { provideIncreaseRouterCount } from '@/provide'
 import HistoryChat from './component/HistoryChat.vue'
 import { router } from '@/router'
+import { storeMutual } from '@/store/mutual'
 
 const route = useRoute()
 
@@ -14,7 +15,11 @@ const routeName = ref('')
 
 const showPopup = ref(false)
 
+const routerCount = ref(0)
+
 const historyChatRef = ref<InstanceType<typeof HistoryChat> | null>(null)
+
+const mutualStore = storeMutual()
 
 const handleHistoryClick = () => {
   showPopup.value = true
@@ -24,14 +29,20 @@ const handleMineClick = () => {
   router.push('/client/mine')
 }
 
-const handlePopupOpened = () => {
+const onPopupOpened = () => {
   historyChatRef.value?.getNovelHistoryListData()
 }
 
-const routerCount = ref(0)
+const onPopupClosed = () => {
+  mutualStore.modifyWantNovelIdStatus(false)
+}
 
 const increaseRouterCount = () => {
   routerCount.value += 1
+}
+
+const handleHistoryChatRecordClick = () => {
+  showPopup.value = false
 }
 
 watchEffect(() => {
@@ -44,13 +55,20 @@ watchEffect(() => {
   routeName.value = route.name as string
 })
 
+watchEffect(()=>{
+  if(mutualStore.isWantNovelId){
+    handleHistoryClick()
+  }
+})
+
 provide(provideIncreaseRouterCount, increaseRouterCount)
+
 </script>
 <template>
   <div class="flex h-full flex-col">
     <BaseNav
       class="shadow-sm"
-      @click-left="handleHistoryClick"
+      @click-left="handleHistoryClick()"
       @click-right="handleMineClick"
     >
       <template #left>
@@ -92,11 +110,12 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
       position="left"
       :style="{ width: '80%', height: '100%' }"
       teleport="body"
-      @opened="handlePopupOpened"
+      @opened="onPopupOpened"
+      @closed="onPopupClosed"
     >
       <HistoryChat
         ref="historyChatRef"
-        @record="(showPopup = false)"
+        @record="handleHistoryChatRecordClick"
       />
     </Popup>
   </div>

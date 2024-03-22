@@ -3,7 +3,6 @@ import '@/styles/style.css'
 import App from './App.vue'
 import { router } from './router'
 import store from './store'
-
 import { storeConfig } from '@/store/config'
 
 import 'vant/lib/index.css'

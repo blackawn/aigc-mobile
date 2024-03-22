@@ -7,6 +7,7 @@ import { useBaseDialog } from '@/composables/useBaseDialog'
 import { isRealEmpty } from '@/utils/is'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useClipboard } from '@vueuse/core'
+import Api from '@/api'
 
 interface OutlineGenerationProps {
   data?: string
@@ -90,6 +91,13 @@ const generateChapterContent = (type?: number) => {
   })
 
   esp.value.addEventListener('error', () => {
+
+    Api.novel.editNovelContent({
+      type: 1,
+      content: chapterContent.value,
+      chatper: chapterNum.value,
+      novel_id: props.novelId
+    })
 
     emit('done', {
       content: chapterContent.value,

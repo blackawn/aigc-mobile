@@ -1,4 +1,4 @@
-import { type InjectionKey,Ref } from 'vue'
+import { type InjectionKey, Ref } from 'vue'
 
 export const provideScrollElemToBottom = Symbol() as InjectionKey<(behavior?: ScrollBehavior) => void>
 

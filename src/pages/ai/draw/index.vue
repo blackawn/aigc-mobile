@@ -2,8 +2,27 @@
 import { ref } from 'vue'
 import DrawInfo from './DrawInfo.vue'
 import DrawResult from './DrawResult.vue'
+import Api, { GetSegmentDetailRes } from '@/api'
+import { onMounted } from 'vue'
 
-const toggleDrawInterface = ref(true)
+const drawResult = ref<GetSegmentDetailRes>({
+  content: '',
+  list: []
+})
+
+const novelId = ref(2019)
+
+const toggleDrawInterface = ref(false)
+
+const getDrawResultDetailListData = async () => {
+  const res = await Api.draw.getSegmentDetail(novelId.value)
+  drawResult.value.content = res.data.content
+  drawResult.value.list = res.data.list
+}
+
+onMounted(() => {
+ getDrawResultDetailListData()
+})
 
 </script>
 <template>
@@ -13,15 +32,18 @@ const toggleDrawInterface = ref(true)
       class="flex-1 overflow-x-hidden"
     >
       <DrawInfo
-        v-show="!toggleDrawInterface"
+        v-if="!toggleDrawInterface"
+        :content="drawResult.content"
+        :result="(drawResult.list.length > 0)"
         @toggle="(v) => (toggleDrawInterface = v)"
       />
       <DrawResult
-        v-show="toggleDrawInterface"
+        v-else-if="toggleDrawInterface"
+        :data="drawResult.list"
+        :novel-id="novelId"
         @toggle="(v) => (toggleDrawInterface = v)"
       />
     </div>
   </div>
 </template>
-<style>
-</style>
+<style></style>

@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { customAlphabet } from 'nanoid'
+import { ConfigData } from '@/api'
 
 export interface BaseParams {
   device_no: string;
@@ -32,12 +33,20 @@ export const storeConfig = defineStore('configStore', () => {
       version: '',
       user_type: '0'
     }
-    
+
+  }
+
+  const configList = ref<Array<ConfigData>>([])
+
+  const modifyConfigList = (data: Array<ConfigData>) => {
+    configList.value = data
   }
 
   return {
     deviceId,
     baseParams,
-    createBaseParams
+    createBaseParams,
+    configList,
+    modifyConfigList
   }
 })

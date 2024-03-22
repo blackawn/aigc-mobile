@@ -10,7 +10,8 @@ import {
   EditNovelContentParams,
   SaveChatDialogParams,
   GetChatDialogParams,
-  GetChatDialogRes
+  GetChatDialogRes,
+  GetNovelContentRes
 } from './types'
 import { R } from '@/api/types'
 
@@ -52,6 +53,14 @@ export const deleteNovelHistory = (id: number): R => {
  */
 export const editNovelContent = (data: EditNovelContentParams): R => {
   return axiosInstance.post('/novel/edit/content', data)
+}
+
+/**
+ * 获取小说内容
+ * @param data 
+ */
+export const getNovelContent = (id: number): R<GetNovelContentRes> => {
+  return axiosInstance.post('/novel/detail/content', {novel_id: id})
 }
 
 /**

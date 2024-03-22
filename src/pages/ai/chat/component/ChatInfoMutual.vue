@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, withDefaults } from 'vue'
+import { withDefaults } from 'vue'
 import { DialogData, DialogType } from './types'
 import ChatInfo from './ChatInfo.vue'
 import { Button, ButtonProps } from 'vant'
+import { storeConfig } from '@/store/config'
 
 export interface ChatDialogProps {
   data?: DialogData,
@@ -27,12 +28,18 @@ const emit = defineEmits<{
   (e: 'mounted'): void
 }>()
 
+const configStore = storeConfig()
+
+const theme = configStore.configList.filter((t) => (t.type === 1)).map((item) => item.name)
+const plot = configStore.configList.filter((t) => (t.type === 4)).map((item) => item.name)
+const writingStyle = configStore.configList.filter((t) => (t.type === 5)).map((item) => item.name)
+
 const mutualButtonMap: MutualButtonMap = {
   guide: ['小说生成', '小说续写', '小说扩写'],
-  theme: ['玄幻仙侠', '言情甜宠', '武侠古典', '奇幻异世', '悬疑推理', '科幻未来', '都市生活', '古诗古文'],
-  plot: ['轻取珍宝', '谈笑风生', '隐藏身份', '舍生取义', '巧用技能', '巧解危机', '邪道能力', '古怪伙伴', '王道信念', '转危为机', '严肃搞笑', '赢人一点', '女神暗恋', '劫富济贫'],
-  writingStyle: ['鲁迅风', '红楼风', '轻小说风', '古文小说风', '金庸武侠风', '马克吐温幽默风', '夏目漱石心理风', '海明威简明严肃风'],
-  expandWriteGuide: ['情节扩写', '人物扩写', '场景扩写', '冲突扩写' ],
+  theme,
+  plot,
+  writingStyle,
+  expandWriteGuide: ['情节扩写', '人物扩写', '场景扩写', '冲突扩写'],
 } as MutualButtonMap
 
 </script>
