@@ -54,7 +54,7 @@ const isEmptyList = computed(() => every(novelHistoryList.value, isEmpty))
 const getNovelHistoryListData = async (keyword = '') => {
   const res = await Api.novel.getNovelHistory({
     search: keyword,
-    type: mutualStore.isWantNovelId ? [1] : null
+    type: mutualStore.novelContentSelected ? [1] : null
   })
 
   mutual.load = false
@@ -135,16 +135,18 @@ const handleDeleteClick = (data: NovelHistoryData) => {
 
 // 记录点击
 const handleRecordClick = (data: NovelHistoryData) => {
-  if (mutualStore.isWantNovelId) {
-    mutualStore.modifyWantNovelId(data.novel_id)
-  } else {
+  if (mutualStore.novelContentSelected) {
+    mutualStore.modifyNovelContentIdSelect(data.novel_id)
+  } else if ([1, 2, 3].includes(data.type)) {
     router.push(`/client/ai/chat/${data.type}/${data.novel_id}`)
+  } else if ([4].includes(data.type)) {
+    router.push(`/client/ai/draw/${data.novel_id}`)
   }
   emit('record')
 }
 
 const onBeforeEnter = (el: Element) => {
-  if (mutualStore.isWantNovelId) return
+  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return
   gsap.to(el, {
     translateX: '-100%',
     duration: 0
@@ -153,7 +155,7 @@ const onBeforeEnter = (el: Element) => {
 
 const onEnter = (el: Element, done: () => void) => {
 
-  if (mutualStore.isWantNovelId) return done()
+  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return done()
 
   const elem = el as HTMLElement
   const index = Number(elem.dataset.index)
@@ -168,7 +170,7 @@ const onEnter = (el: Element, done: () => void) => {
 
 const onLeave = (el: Element, done: () => void) => {
 
-  if (mutualStore.isWantNovelId) return done()
+  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return done()
 
   gsap.to(el, {
     translateX: '100%',
@@ -200,7 +202,7 @@ defineExpose({
         </template>
       </Search>
       <Button
-        v-show="!mutualStore.isWantNovelId"
+        v-show="!mutualStore.novelContentSelected"
         size="small"
         type="success"
         class="!px-3"
@@ -234,7 +236,7 @@ defineExpose({
         </Divider>
         <div class="flex flex-col gap-y-1.5">
           <TransitionGroup
-            :name="(mutualStore.isWantNovelId ? undefined : 'fade')"
+            :name="(mutualStore.novelContentSelected ? undefined : 'fade')"
             @before-enter="onBeforeEnter"
             @enter="onEnter"
             @leave="onLeave"

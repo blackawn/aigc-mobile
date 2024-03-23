@@ -34,7 +34,7 @@ const onPopupOpened = () => {
 }
 
 const onPopupClosed = () => {
-  mutualStore.modifyWantNovelIdStatus(false)
+  mutualStore.modifyNovelContentSelected(false)
 }
 
 const increaseRouterCount = () => {
@@ -56,7 +56,7 @@ watchEffect(() => {
 })
 
 watchEffect(()=>{
-  if(mutualStore.isWantNovelId){
+  if(mutualStore.novelContentSelected){
     handleHistoryClick()
   }
 })
@@ -102,8 +102,17 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
         />
       </template>
     </BaseNav>
-    <div class="flex-1 overflow-hidden">
-      <RouterView :key="routerCount" />
+    <div class="relative flex-1 overflow-hidden">
+      <RouterView
+        v-slot="{ Component, route: rt }"
+      >
+        <Transition :name="String(rt.meta.transition)">
+          <component
+            :is="Component"
+            :key="routerCount"
+          />
+        </Transition>
+      </RouterView>
     </div>
     <Popup
       v-model:show="showPopup"
@@ -120,4 +129,5 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
     </Popup>
   </div>
 </template>
-<style></style>
+<style scoped>
+</style>

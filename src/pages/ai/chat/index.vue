@@ -10,8 +10,10 @@ import InputBox from './component/InputBox.vue'
 import Api from '@/api'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { parseTime } from '@/utils/format'
-import { useRoute } from 'vue-router'
+import { useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { isRealEmpty } from '@/utils/is'
+import { router } from '@/router'
+import { nanoid } from 'nanoid'
 
 interface ChatDialogData {
   type: number
@@ -62,6 +64,12 @@ const mutual = reactive({
 let lastScrollTop = 0
 
 let isAutoScroll = true
+
+// onBeforeRouteUpdate((to, form, next) => {
+//   console.log(to)
+
+//   next(true)
+// })
 
 // 请求获取会话框信息
 const getChatDialogListData = async (id: number) => {
@@ -178,7 +186,7 @@ const handleGuideButtonClick = async (data: Pick<DialogData, 'type' | 'content'>
     // ********** 自己跳转自己 ***********/
     // 目的是为了生成会话的时候, 执行刷新还会获取当前会话的数据
     // 缺点: 多余的一次相同渲染
-    // router.push(`/client/ai/chat/${type}/${novelId.value}`)
+   // router.push(`/client/ai/chat/${1}/${1646}`)
   }
 }
 

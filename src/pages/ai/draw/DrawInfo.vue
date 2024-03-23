@@ -49,7 +49,6 @@ const props = withDefaults(defineProps<DrawResultProps>(), {
 
 const emit = defineEmits<{
   (e: 'toggle', value: boolean): void
-  (e: 'toggle', value: boolean): void
 }>()
 
 const configStore = storeConfig()
@@ -145,7 +144,7 @@ const engineList = ref<Array<Engine>>([
 
 // 从我的小说获取内容点击
 const handleSelectFromHistoryChatClick = () => {
-  mutualStore.modifyWantNovelIdStatus(true)
+  mutualStore.modifyNovelContentSelected(true)
 }
 
 // 清空点击
@@ -313,7 +312,7 @@ const handleToggleResultClick = () => {
 // 获取小说的内容
 const getNovelHistoryContent = async (novelId: number) => {
   const res = await Api.novel.getNovelContent(novelId).finally(()=>{
-    mutualStore.modifyWantNovelId(-1)
+    mutualStore.modifyNovelContentIdSelect(-1)
   })
 
   if(isRealEmpty(res.data.content.trim())){
@@ -336,8 +335,8 @@ watchEffect(() => {
 })
 
 watchEffect(() =>  {
-  if (mutualStore.wantNovelId > 0) {
-    getNovelHistoryContent(mutualStore.wantNovelId)
+  if (mutualStore.novelContentIdSelect > 0) {
+    getNovelHistoryContent(mutualStore.novelContentIdSelect)
   }
 })
 

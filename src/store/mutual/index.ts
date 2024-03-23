@@ -1,24 +1,34 @@
 import { ref } from 'vue'
+import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 export const storeMutual = defineStore('mutualStore', () => {
 
-  const isWantNovelId = ref(false) 
+  const novelContentSelected = ref(false) 
 
-  const wantNovelId = ref(-1)
+  const novelContentIdSelect = ref(-1)
 
-  const modifyWantNovelIdStatus = (status: boolean)=>{
-    isWantNovelId.value = status
+  const modifyNovelContentSelected = (status: boolean)=>{
+    novelContentSelected.value = status
   }
 
-  const modifyWantNovelId = (id: number)=>{
-    wantNovelId.value = id
+  const modifyNovelContentIdSelect = (id: number)=>{
+    novelContentIdSelect.value = id
+  }
+
+  // const transitionEffected = useStorage<boolean>('transitionEffected', JSON.parse(import.meta.env.VITE_APP_MUTUAL_TRANSITION))
+  const transitionEffected = ref<boolean>(JSON.parse(import.meta.env.VITE_APP_MUTUAL_TRANSITION))
+
+  const modifyTransitionEffected = (status: boolean)=>{
+    transitionEffected.value = status
   }
 
   return {
-    isWantNovelId,
-    modifyWantNovelIdStatus,
-    wantNovelId,
-    modifyWantNovelId
+    novelContentSelected,
+    modifyNovelContentSelected,
+    novelContentIdSelect,
+    modifyNovelContentIdSelect,
+    transitionEffected,
+    modifyTransitionEffected
   }
 })

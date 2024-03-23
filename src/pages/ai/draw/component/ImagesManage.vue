@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<ImagesManageProps>(), {
 
 const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
-const selected = ref(-1)
+const select = ref(-1)
 
 const drawResultTasList = ref<Array<SegmentImagesTask>>([])
 
@@ -26,7 +26,7 @@ const imageList = computed(() => {
   return drawResultTasList.value.map((item) => (item.imageUrl))
 })
 
-const imageSelected = computed(() => imageList.value[selected.value])
+const imageSelected = computed(() => imageList.value[select.value])
 
 const getDrawResultTasListData = async () => {
 
@@ -41,7 +41,7 @@ const getDrawResultTasListData = async () => {
 }
 
 const handleImageSelect = (index: number) => {
-  selected.value = (index === selected.value ? -1 : index)
+  select.value = (index === select.value ? -1 : index)
 }
 
 const handleIImagePreview = (index: number) => {
@@ -52,7 +52,7 @@ const handleIImagePreview = (index: number) => {
 
   showImagePreview({
     images: imagePreviewList,
-    startPosition: (selected.value === -1 ? 0 : index),
+    startPosition: (select.value === -1 ? 0 : index),
     closeable: true,
     closeOnClickImage: false
   })
@@ -78,7 +78,7 @@ defineExpose({
       :key="item.task_id"
       class="relative overflow-hidden rounded-md"
       :class="{
-        'outline outline-2 outline-offset-2 outline-primary': (selected === index)
+        'outline outline-2 outline-offset-2 outline-primary': (select === index)
       }"
       @click="handleImageSelect(index)"
     >
