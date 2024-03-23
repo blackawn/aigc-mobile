@@ -80,7 +80,7 @@ const handleAddNewRoleClick = () => {
   roleList.value.push({ ...defaultRole, id: nanoid(10) })
 
   nextTick(() => {
-    injectScrollElemToBottom?.()
+    injectScrollElemToBottom?.('smooth', true)
   })
 }
 

@@ -10,7 +10,7 @@ const drawResult = ref<GetSegmentDetailRes>({
   list: []
 })
 
-const novelId = ref(2019)
+const novelId = ref(1984)
 
 const toggleDrawInterface = ref(false)
 

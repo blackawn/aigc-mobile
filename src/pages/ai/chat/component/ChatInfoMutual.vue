@@ -4,6 +4,7 @@ import { DialogData, DialogType } from './types'
 import ChatInfo from './ChatInfo.vue'
 import { Button, ButtonProps } from 'vant'
 import { storeConfig } from '@/store/config'
+import { sample } from 'lodash'
 
 export interface ChatDialogProps {
   data?: DialogData,
@@ -25,7 +26,6 @@ const props = withDefaults(defineProps<ChatDialogProps>(), {
 
 const emit = defineEmits<{
   (e: 'button', data: Pick<DialogData, 'type' | 'content'>): void
-  (e: 'mounted'): void
 }>()
 
 const configStore = storeConfig()
@@ -42,6 +42,19 @@ const mutualButtonMap: MutualButtonMap = {
   expandWriteGuide: ['情节扩写', '人物扩写', '场景扩写', '冲突扩写'],
 } as MutualButtonMap
 
+const handleButtonClick = (content: string) => {
+
+  if((props.data.type === 'theme') && (content === '随机盲盒')){
+    const randomList = mutualButtonMap[props.data.type].filter((item)=> item !== '随机盲盒')
+    content = sample(randomList) as string
+  }
+
+  emit('button', {
+    type: props.data.type,
+    content
+  })
+}
+
 </script>
 <template>
   <ChatInfo
@@ -56,10 +69,7 @@ const mutualButtonMap: MutualButtonMap = {
         <Button
           v-bind="props.buttonProps"
           size="small"
-          @click="emit('button', {
-            type: props.data.type,
-            content: item
-          })"
+          @click="handleButtonClick(item)"
         >
           {{ item }}
         </Button>

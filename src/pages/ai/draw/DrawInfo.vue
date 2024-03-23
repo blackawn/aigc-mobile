@@ -17,8 +17,7 @@ import style_5 from '@/assets/images/style_5.jpg'
 import style_6 from '@/assets/images/style_6.jpg'
 import style_7 from '@/assets/images/style_7.jpg'
 
-import { NativeEventSource } from 'event-source-polyfill'
-import { watch } from 'vue'
+import { EventSourcePolyfill } from 'event-source-polyfill'
 
 interface DrawResultProps {
   content?: string
@@ -161,14 +160,17 @@ const handleStyleClick = (index: number) => {
   }
 }
 
+// 尺寸选择点击
 const handleSizeSelectClick = (index: number) => {
   select.size = index
 }
 
+// 绘图引擎点击
 const handleEngineSelectClick = (index: number) => {
   select.engine = index
 }
 
+// 随机盲合
 const handleRandomStyleClick = () => {
   select.style = -1
   randomStyle.value = sample(styleList.value) as Style
@@ -261,15 +263,13 @@ const handleGenerateSegmentClick = async () => {
 
     let segmentContent = ''
 
-    const esp = new NativeEventSource(`${apiUrl}/novel/segment?novel_id=${id}&message_id=1`)
+    const esp = new EventSourcePolyfill(`${apiUrl}/novel/segment?novel_id=${id}&message_id=1`)
 
     esp.addEventListener('message', (message) => {
       segmentContent += JSON.parse(message.data).content
     })
 
     esp.addEventListener('error', async () => {
-
-      console.log(segmentContent)
 
       const messages = formatSegmentContent(segmentContent)
 
@@ -290,6 +290,8 @@ const handleGenerateSegmentClick = async () => {
       }
     })
 
+  } else {
+    mutual.generate = false
   }
 
 }
@@ -311,11 +313,11 @@ const handleToggleResultClick = () => {
 
 // 获取小说的内容
 const getNovelHistoryContent = async (novelId: number) => {
-  const res = await Api.novel.getNovelContent(novelId).finally(()=>{
+  const res = await Api.novel.getNovelContent(novelId).finally(() => {
     mutualStore.modifyNovelContentIdSelect(-1)
   })
 
-  if(isRealEmpty(res.data.content.trim())){
+  if (isRealEmpty(res.data.content.trim())) {
     showToast('该小说内容为空!')
     return
   }
@@ -334,7 +336,7 @@ watchEffect(() => {
   }
 })
 
-watchEffect(() =>  {
+watchEffect(() => {
   if (mutualStore.novelContentIdSelect > 0) {
     getNovelHistoryContent(mutualStore.novelContentIdSelect)
   }

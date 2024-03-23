@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<OutlineGenerationProps>(), {
 
 const emit = defineEmits<{
   (e: 'done', content: string): void
-  (e: 'update', content: string): void
+  (e: 'edit', content: string): void
   (e: 'confirm', content: string): void
 }>()
 
@@ -84,7 +84,7 @@ const generateOutlineContent = () => {
     if (!mutual.generate) {
       clearInterval(timer)
     }
-    injectScrollElemToBottom?.()
+    injectScrollElemToBottom?.('smooth', true)
   }, 1000)
 }
 
@@ -123,7 +123,7 @@ const handleEditOutlineClick = () => {
       }
       const content = outlineModifyRef.value?.getContent() || ''
       outlineContent.value = content
-      emit('update', outlineContent.value)
+      emit('edit', outlineContent.value)
       closeDialog()
     }
   })

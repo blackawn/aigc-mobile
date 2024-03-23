@@ -11,7 +11,7 @@ import { gsap } from 'gsap'
 import { storeMutual } from '@/store/mutual'
 
 const emit = defineEmits<{
-  (e: 'record'): void
+  (e: 'select'): void
 }>()
 
 const searchValue = ref('')
@@ -142,7 +142,7 @@ const handleRecordClick = (data: NovelHistoryData) => {
   } else if ([4].includes(data.type)) {
     router.push(`/client/ai/draw/${data.novel_id}`)
   }
-  emit('record')
+  emit('select')
 }
 
 const onBeforeEnter = (el: Element) => {

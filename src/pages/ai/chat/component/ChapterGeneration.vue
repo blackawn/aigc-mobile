@@ -114,7 +114,7 @@ const generateChapterContent = (type?: number) => {
     if (!mutual.generate) {
       clearInterval(timer)
     }
-    injectScrollElemToBottom?.()
+    injectScrollElemToBottom?.('smooth', true)
   }, 1000)
 }
 

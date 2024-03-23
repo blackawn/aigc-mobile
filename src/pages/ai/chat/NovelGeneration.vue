@@ -396,7 +396,7 @@ defineExpose({
       :novel-id="dialog.novelId"
       :disabled="(lastDialog?.type !== 'outlineGeneration')"
       @done="doneOutlineContent"
-      @edit-confirm="doneOutlineContent"
+      @edit="doneOutlineContent"
       @confirm="handleConfirmChapterGenerationClick"
     />
     <ChatInfoMutualMultiple

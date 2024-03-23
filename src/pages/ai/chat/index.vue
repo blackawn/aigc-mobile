@@ -13,7 +13,6 @@ import { parseTime } from '@/utils/format'
 import { useRoute, onBeforeRouteUpdate } from 'vue-router'
 import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
-import { nanoid } from 'nanoid'
 
 interface ChatDialogData {
   type: number
@@ -186,11 +185,11 @@ const handleGuideButtonClick = async (data: Pick<DialogData, 'type' | 'content'>
     // ********** 自己跳转自己 ***********/
     // 目的是为了生成会话的时候, 执行刷新还会获取当前会话的数据
     // 缺点: 多余的一次相同渲染
-   // router.push(`/client/ai/chat/${1}/${1646}`)
+    // router.push(`/client/ai/chat/${1}/${1646}`)
   }
 }
 
-// 用户发送
+// 输入框发生
 const onInputSend = (value: string) => {
   switch (chatDialogData.value.type) {
     case 1:
@@ -226,9 +225,9 @@ const onElScroll = (e: Event) => {
 }
 
 // 滚动到底部
-const scrollElToBottom: (behavior?: 'auto' | 'instant' | 'smooth') => void = (behavior = 'smooth') => {
+const scrollElToBottom: (behavior?: 'auto' | 'instant' | 'smooth', auto?: boolean) => void = (behavior = 'smooth', auto = false) => {
 
-  if (!isAutoScroll) return
+  if (!isAutoScroll && auto) return
 
   requestAnimationFrame(() => {
     if (scrollElem.value) {

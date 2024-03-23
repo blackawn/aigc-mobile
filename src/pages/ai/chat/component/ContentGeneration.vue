@@ -95,7 +95,7 @@ const generateBaseContent = () => {
     if (!mutual.generate) {
       clearInterval(timer)
     }
-    injectScrollElemToBottom?.()
+    injectScrollElemToBottom?.('smooth', true)
   }, 1000)
 }
 

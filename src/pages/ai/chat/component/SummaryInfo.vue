@@ -83,6 +83,7 @@ watchEffect(() => {
       <span class="text-primary">是否确定生成小说大纲？</span>
       <div class="flex items-center gap-x-2">
         <Button
+          v-show="false"
           size="small"
           round
           type="default"

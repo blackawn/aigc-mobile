@@ -6,14 +6,13 @@ import {
   Divider,
   Popover,
   PopoverAction,
-  ImagePreview,
   Image,
   Loading,
   Button,
   Circle,
-  Field,
   showImagePreview,
-  showToast
+  showToast,
+  Lazyload 
 } from 'vant'
 import Api, { GetSegmentDetailRes, SegmentData } from '@/api'
 import { useBaseDialog } from '@/composables/useBaseDialog'
@@ -40,7 +39,7 @@ const drawResultList = ref(props.data)
 
 const novelId = ref(props.novelId)
 
-const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
+const imageUrlResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -48,6 +47,7 @@ const imageActionsPopover: Array<PopoverAction> = [
   { text: '多图管理', icon: 'ph:images' },
   { text: '重绘', icon: 'mdi:image-refresh-outline' },
   { text: '下载', icon: 'quill:folder-download' },
+  { text: '下载原图', icon: 'quill:folder-download' },
 ]
 
 const imagesControlList = ref([
@@ -134,6 +134,9 @@ const handleImageActionsPopoverClick = (actionIndex: number, segmentId: number, 
       break
     case 1:
       break
+    case 2:
+      handleDownImageClick(index)
+      break
   }
 }
 
@@ -158,12 +161,20 @@ const handleImageManageClick = (segmentId: number, index: number) => {
   })
 }
 
+// 下载点击
+const handleDownImageClick = (index: number, original = false) => {
+  let url = drawResultList.value[index].imageUrl
+  if (!isRealEmpty(url.trim())) {
+    url = original ? `${url}${imageUrlResize}` : url
+  }
+}
+
 // 分镜图片预览点击
 const handleSegmentImagePreviewClick = (index: number) => {
 
   const imagePreviewList = drawResultList.value
     .filter((item) => !isRealEmpty(item.imageUrl))
-    .map((d) => (`${d.imageUrl}${imageResize}`))
+    .map((d) => (`${d.imageUrl}${imageUrlResize}`))
 
   showImagePreview({
     images: imagePreviewList,
@@ -180,7 +191,7 @@ const handleToggleGenerateClick = () => {
 
 watchEffect(() => {
   drawResultList.value = props.data
-  novelId.value= props.novelId
+  novelId.value = props.novelId
 })
 
 </script>
@@ -200,6 +211,7 @@ watchEffect(() => {
         </div>
         <span class="text-sm text-neutral-500">共{{ drawResultList.length }}条分镜</span>
       </div>
+
       <div class="mb-40 mt-3 flex flex-col gap-y-4">
         <div
           v-for="(result, itemIndex) in drawResultList"
@@ -246,28 +258,45 @@ watchEffect(() => {
                     <Icon icon="mingcute:menu-line" />
                   </div>
                 </template>
-                <template #action="{ action, index }">
-                  <div class="flex size-full flex-col justify-center">
-                    <Divider
-                      v-if="(index !== 0)"
-                      class="!my-0"
+
+                <div class="flex flex-col">
+                  <div class="flex flex-1 items-center gap-x-1.5">
+                    <Icon
+                      icon="ph:images"
+                      class="text-lg"
                     />
-                    <div class="flex flex-1 items-center gap-x-1.5">
-                      <Icon
-                        :icon="action.icon"
-                        class="text-lg"
-                      />
-                      <span class="text-sm">{{ action.text }}</span>
-                    </div>
+                    <span class="text-sm">多图管理</span>
                   </div>
-                </template>
+                  <Divider
+                    class="!my-0"
+                  />
+                  <div class="flex flex-1 items-center gap-x-1.5">
+                    <Icon
+                      icon="ph:images"
+                      class="text-lg"
+                    />
+                    <span class="text-sm">重绘</span>
+                  </div>
+                  <Divider
+                    class="!my-0"
+                  />
+                  <div class="flex flex-1 items-center gap-x-1.5">
+                    <Icon
+                      icon="ph:images"
+                      class="text-lg"
+                    />
+                    <span class="text-sm">下载</span>
+                  </div>
+                </div>
               </Popover>
             </div>
             <div class="mt-2 rounded-md bg-neutral-50 p-3">
               <div @click="handleSegmentImagePreviewClick(itemIndex)">
                 <Image
+                  v-lazy="`${result.imageUrl}${imageUrlResize}`"
                   class="size-full"
-                  :src="`${result.imageUrl}${imageResize}`"
+                  lazy-load
+                  :src="`${result.imageUrl}${imageUrlResize}`"
                 >
                   <template #loading>
                     <Loading

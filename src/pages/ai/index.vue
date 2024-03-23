@@ -124,7 +124,7 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
     >
       <HistoryChat
         ref="historyChatRef"
-        @record="handleHistoryChatRecordClick"
+        @select="handleHistoryChatRecordClick"
       />
     </Popup>
   </div>

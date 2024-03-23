@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import Api, { SegmentImagesTask } from '@/api'
 import { Image, Loading, showImagePreview } from 'vant'
 import { Icon } from '@iconify/vue'
 import { isRealEmpty } from '@/utils/is'
-import { computed } from 'vue'
 
 interface ImagesManageProps {
   segmentId: number
