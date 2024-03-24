@@ -193,7 +193,7 @@ const handleTransformDrawClick = async (action: string, segmentId: number, taskI
   if (res.code === 0) {
     segmentSelectList.value = [segmentId]
     showNotify({
-      message: '提示！绘图过程时间较久',
+      message: '提示！绘图过程时间可能较久',
       type: 'primary'
     })
     resume()
@@ -265,7 +265,7 @@ const handleActionDrawClick = async () => {
   })
   if (res.code === 0) {
     showNotify({
-      message: '提示！绘图过程时间较久',
+      message: '提示！绘图过程时间可能较久',
       type: 'primary'
     })
     resume()
