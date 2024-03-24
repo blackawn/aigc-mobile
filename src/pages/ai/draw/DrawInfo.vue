@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watchEffect, inject, computed } from 'vue'
-import { Image, Button, showToast } from 'vant'
+import { Image, Button, showToast, showLoadingToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { sample } from 'lodash'
 import { storeConfig } from '@/store/config'
@@ -46,6 +46,7 @@ const modelToggle = defineModel(
 
 const emit = defineEmits<{
   (e: 'config', config: DrawConfig): void
+  (e: 'done', novelId: number): void
 }>()
 
 const injectDrawResultDetail = inject(provideDrawResultDetail, null)
@@ -252,6 +253,12 @@ const handleGenerateSegmentClick = async () => {
     return
   }
 
+  const lt = showLoadingToast({
+    message: '生成中...',
+    forbidClick: true,
+    loadingType: 'spinner',
+  })
+
   mutual.generate = true
 
   const createRes = await Api.novel.createNovel({
@@ -284,7 +291,8 @@ const handleGenerateSegmentClick = async () => {
       const messages = formatSegmentContent(segmentContent)
 
       if (isRealEmpty(messages)) {
-        showToast('未生成有效分镜，请重试')
+        lt.close()
+        showToast('未生成有效分镜,请重试')
         mutual.generate = false
         return
       }
@@ -293,15 +301,22 @@ const handleGenerateSegmentClick = async () => {
         novel_id: id,
         messages,
         chapter: 1
-      }).finally(() => mutual.generate = false)
+      }).finally(() => {
+        lt.close()
+        mutual.generate = false
+      })
 
       if (res.code === 0) {
+        lt.close()
+        showToast('分镜生成成功!')
+        emit('done', id)
         modelToggle.value = false
       }
     })
 
   } else {
     mutual.generate = false
+    lt.close()
   }
 
 }
@@ -393,10 +408,10 @@ onMounted(() => {
           </div>
           <div
             v-show="(drawResultDetailList?.length > 0)"
-            class="flex items-center gap-x-1 text-indigo-400 active:text-neutral-400"
+            class="flex items-center gap-x-1 active:text-neutral-400"
             @click="handleToggleResultClick"
           >
-            <span class="text-sm leading-none">查看绘图结果</span>
+            <span class="text-sm leading-none">查看分镜结果</span>
             <Icon
               icon="ph:caret-right"
               class="text-lg"

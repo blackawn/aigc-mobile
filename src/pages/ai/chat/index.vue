@@ -10,9 +10,8 @@ import InputBox from './component/InputBox.vue'
 import Api from '@/api'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { parseTime } from '@/utils/format'
-import { useRoute, onBeforeRouteUpdate } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { isRealEmpty } from '@/utils/is'
-import { router } from '@/router'
 
 interface ChatDialogData {
   type: number

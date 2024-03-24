@@ -43,11 +43,10 @@ const handleImageSelect = (index: number) => {
   select.value = (index === select.value ? -1 : index)
 }
 
-const handleIImagePreview = (index: number) => {
+const handleImagePreview = (index: number) => {
 
   const imagePreviewList = imageList.value
-    .filter((item) => !isRealEmpty(item))
-    .map((d) => (`${d}${imageResize}`))
+    .map((item) => ((`${item}${imageResize}`)))
 
   showImagePreview({
     images: imagePreviewList,
@@ -77,12 +76,11 @@ defineExpose({
       :key="item.task_id"
       class="relative overflow-hidden rounded-md"
       :class="{
-        'outline outline-2 outline-offset-2 outline-primary': (select === index)
+        'min-h-20 outline outline-2 outline-offset-2 outline-primary': (select === index)
       }"
       @click="handleImageSelect(index)"
     >
       <Image
-        v-if="!isRealEmpty(item.imageUrl)"
         class="size-full"
         :src="`${item.imageUrl}${imageResize}`"
       >
@@ -98,8 +96,9 @@ defineExpose({
       >{{
         item.action }}</span>
       <div
+        v-show="!isRealEmpty(item.imageUrl)"
         class="absolute right-2 top-2 rounded-md bg-black/35 p-1.5 text-white active:text-neutral-400"
-        @click.stop="handleIImagePreview(index)"
+        @click.stop="handleImagePreview(index)"
       >
         <Icon icon="grommet-icons:view" />
       </div>

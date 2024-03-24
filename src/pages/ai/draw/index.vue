@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, provide, reactive } from 'vue'
+import { ref, provide, watchEffect, onMounted } from 'vue'
 import DrawInfo from './DrawInfo.vue'
 import DrawResult from './DrawResult.vue'
 import Api, { GetSegmentDetailRes } from '@/api'
 import { provideDrawResultDetail } from '@/provide'
-import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 export interface DrawConfig {
   style: number
@@ -17,7 +17,9 @@ const drawResultDetail = ref<GetSegmentDetailRes>({
   list: []
 })
 
-const novelId = ref(2013)
+const novelId = ref(-1)
+
+const route = useRoute()
 
 const toggleDrawInterface = ref(true)
 
@@ -29,10 +31,11 @@ const drawConfig = ref<DrawConfig>({
 
 const drawInfoRef = ref<InstanceType<typeof DrawInfo> | null>(null)
 
-const getDrawResultDetailListData = async () => {
-  const res = await Api.draw.getSegmentDetail(novelId.value)
+const getDrawResultDetailListData = async (id: number) => {
+  const res = await Api.draw.getSegmentDetail(id)
   drawResultDetail.value.content = res.data.content
   drawResultDetail.value.list = res.data.list
+  novelId.value = id
 }
 
 const getDrawConfig = (config: DrawConfig) => {
@@ -41,8 +44,15 @@ const getDrawConfig = (config: DrawConfig) => {
 
 provide(provideDrawResultDetail, drawResultDetail)
 
+watchEffect(() => {
+  const id = Number(route.params.id)
+  if (id > 0) {
+    getDrawResultDetailListData(id)
+  }
+})
+
 onMounted(() => {
-  getDrawResultDetailListData()
+  //getDrawResultDetailListData(1984)
 })
 
 </script>
@@ -57,6 +67,7 @@ onMounted(() => {
         ref="drawInfoRef"
         v-model:toggle="toggleDrawInterface"
         @config="getDrawConfig"
+        @done="getDrawResultDetailListData"
       />
       <DrawResult
         v-if="!toggleDrawInterface"

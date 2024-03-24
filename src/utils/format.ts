@@ -88,3 +88,28 @@ export const parseTime = (isTime?: number | Date, cFormat?: string): string => {
 
   return timeStr
 }
+
+/**
+ * 获取图片命名的格式
+ * @param {*} url 地址
+ * @returns String
+ */
+export const getFileExtension = (url: string): string => {
+  // 可能的图片扩展名列表
+  const imageExtensions: string[] = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico']
+
+  // 通过正则表达式从 URL 中提取文件扩展名
+  const matches = url.match(/\.([a-zA-Z0-9]+)(\?|$)/)
+  if (matches) {
+    const extension: string = matches[1].toLowerCase()
+    // 遍历可能的扩展名，直到找到第一个有效的扩展名
+    for (const imageExtension of imageExtensions) {
+      if (extension.includes(imageExtension)) {
+        return imageExtension
+      }
+    }
+  }
+
+  // 如果未找到匹配的扩展名，则返回空字符串
+  return ''
+}

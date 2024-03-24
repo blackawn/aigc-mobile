@@ -69,13 +69,13 @@ export interface SegmentImagesTask {
 
 export interface EditSegmentParams extends SegmentData {
   novel_id: number
-} 
+}
 
 export interface SaveSegmentParams {
   novel_id: number
   chapter: number
   messages: Array<SegmentMessage>
-} 
+}
 
 export interface SegmentMessage {
   scene: string;
@@ -87,4 +87,38 @@ export interface SegmentMessage {
   checked: boolean;
   ratio?: string;
   style_id?: number;
+}
+
+export interface ActionDrawParams {
+  ids: Array<number>;
+  novel_id: number
+  style_id: number
+  type: number
+}
+
+export interface GetDrawProgressParams {
+  ids: Array<number>;
+}
+
+export type GetDrawProgressRes = Array<DrawProgress>
+
+export interface DrawProgress {
+  task_id: string;
+  draw_task_id: string;
+  imageUrl: string;
+  status: number; // 0 未开始 1 处理成功  2 排队中 3 正在处理 4 正在下载 5 处理失败 7 可能存在敏感词
+  status_text: string;
+  draw_status: string;
+  draw_progress: string;
+  download_status: number;
+  type: number;
+  id: number;
+}
+
+export interface TransformDrawParams {
+  novel_id: number
+  segment_id: number
+  action: string  //U1 U2 U3 U4 V1 V2 V3 V4 RE
+  task_id: string,
+  type: number // 1:midjourney, 2: gpt dalle-3
 }

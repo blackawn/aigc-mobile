@@ -5,7 +5,11 @@ import {
   SegmentImagesTaskList,
   SegmentData,
   EditSegmentParams,
-  SaveSegmentParams
+  SaveSegmentParams,
+  ActionDrawParams,
+  GetDrawProgressParams,
+  GetDrawProgressRes,
+  TransformDrawParams
 } from './types'
 import { R } from '../types'
 
@@ -39,4 +43,28 @@ export const saveSegment = (params: SaveSegmentParams): R => {
  */
 export const editSegment = (params: EditSegmentParams): R => {
   return axiosInstance.post('/novel/segment/edit', params)
+}
+
+/**
+ * 开始绘画
+ * @param params 
+ */
+export const actionDraw = (params: ActionDrawParams): R => {
+  return axiosInstance.post('/novel/segment/draw', params)
+}
+
+/**
+ * 获取绘图进度
+ * @param params 
+ */
+export const getDrawProgress = (params: GetDrawProgressParams): R<GetDrawProgressRes> => {
+  return axiosInstance.post('/novel/segment/draw_progress', params)
+}
+
+/**
+ * 转换/重回单张
+ * @param params 
+ */
+export const transformDraw = (params: TransformDrawParams): R => {
+  return axiosInstance.post('/novel/draw/image_change', params)
 }

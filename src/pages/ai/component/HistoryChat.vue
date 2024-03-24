@@ -7,7 +7,6 @@ import { isEmpty, every } from 'lodash'
 import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
 import { useBaseDialog } from '@/composables/useBaseDialog'
-import { gsap } from 'gsap'
 import { storeMutual } from '@/store/mutual'
 
 const emit = defineEmits<{
@@ -145,39 +144,6 @@ const handleRecordClick = (data: NovelHistoryData) => {
   emit('select')
 }
 
-const onBeforeEnter = (el: Element) => {
-  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return
-  gsap.to(el, {
-    translateX: '-100%',
-    duration: 0
-  })
-}
-
-const onEnter = (el: Element, done: () => void) => {
-
-  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return done()
-
-  const elem = el as HTMLElement
-  const index = Number(elem.dataset.index)
-
-  gsap.to(el, {
-    translateX: '0',
-    delay: index * 0.1,
-    onComplete: done,
-    clearProps: 'all'
-  })
-}
-
-const onLeave = (el: Element, done: () => void) => {
-
-  if (mutualStore.novelContentSelected || !mutualStore.transitionEffected) return done()
-
-  gsap.to(el, {
-    translateX: '100%',
-    onComplete: done
-  })
-}
-
 defineExpose({
   getNovelHistoryListData
 })
@@ -189,7 +155,8 @@ defineExpose({
       <Search
         v-model="searchValue"
         placeholder="请输入搜索关键词"
-        class="flex-1 !py-0 !pl-0 !pr-2"
+        class="flex-1"
+        :class="(!mutualStore.novelContentSelected ? '!py-0 !pl-0 !pr-2' : '!p-0')"
         autocomplete="off"
         @click-left-icon="getNovelHistoryListData(searchValue)"
         @search="getNovelHistoryListData(searchValue)"
@@ -235,56 +202,49 @@ defineExpose({
           {{ item.label }}
         </Divider>
         <div class="flex flex-col gap-y-1.5">
-          <TransitionGroup
-            :name="(mutualStore.novelContentSelected ? undefined : 'fade')"
-            @before-enter="onBeforeEnter"
-            @enter="onEnter"
-            @leave="onLeave"
+          <div
+            v-for="(record, index) in item.list"
+            :key="record.novel_id"
+            class="flex rounded bg-neutral-100 px-4 py-3"
+            :data-index="index"
           >
             <div
-              v-for="(record, index) in item.list"
-              :key="record.novel_id"
-              class="flex rounded bg-neutral-100 px-4 py-3"
-              :data-index="index"
+              class="flex flex-1 items-center truncate active:text-neutral-400"
+              @click="handleRecordClick(record)"
             >
-              <div
-                class="flex flex-1 items-center truncate active:text-neutral-400"
-                @click="handleRecordClick(record)"
-              >
-                <div class="mr-2 ">
-                  <Icon icon="lucide:book-open-text" />
-                </div>
-                <span class="flex-1 truncate text-sm ">{{ record.title }}</span>
+              <div class="mr-2 ">
+                <Icon icon="lucide:book-open-text" />
               </div>
-              <div class="flex gap-x-2">
-                <div
-                  class="p-1 active:text-neutral-400"
-                  @click.stop="handleToggleTopClick(record)"
-                >
-                  <Icon
-                    v-if="record.is_top === 1"
-                    icon="lucide:arrow-down-to-line"
-                  />
-                  <Icon
-                    v-else
-                    icon="lucide:arrow-up-to-line"
-                  />
-                </div>
-                <div
-                  class="p-1 active:text-neutral-400"
-                  @click.stop="handleEditClick(record)"
-                >
-                  <Icon icon="lucide:edit" />
-                </div>
-                <div
-                  class="p-1 active:text-neutral-400"
-                  @click.stop="handleDeleteClick(record)"
-                >
-                  <Icon icon="mi:delete" />
-                </div>
+              <span class="flex-1 truncate text-sm ">{{ record.title }}</span>
+            </div>
+            <div class="flex gap-x-2">
+              <div
+                class="p-1 active:text-neutral-400"
+                @click.stop="handleToggleTopClick(record)"
+              >
+                <Icon
+                  v-if="record.is_top === 1"
+                  icon="lucide:arrow-down-to-line"
+                />
+                <Icon
+                  v-else
+                  icon="lucide:arrow-up-to-line"
+                />
+              </div>
+              <div
+                class="p-1 active:text-neutral-400"
+                @click.stop="handleEditClick(record)"
+              >
+                <Icon icon="lucide:edit" />
+              </div>
+              <div
+                class="p-1 active:text-neutral-400"
+                @click.stop="handleDeleteClick(record)"
+              >
+                <Icon icon="mi:delete" />
               </div>
             </div>
-          </TransitionGroup>
+          </div>
         </div>
       </div>
     </div>
@@ -293,9 +253,5 @@ defineExpose({
 <style>
 .van-divider--content-left:before {
   @apply max-w-0 mr-2;
-}
-
-.fade-move {
-  @apply duration-300
 }
 </style>
