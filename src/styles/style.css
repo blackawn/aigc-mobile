@@ -25,6 +25,13 @@
   .custom .van-dialog__message {
     @apply flex flex-col
   }
+
+  .custom.van-popup--center{
+    top: 50vh;
+    left: 50vw;
+    margin: unset;
+    transform: translateY(-50%) translateX(-50%);
+  }
 }
 
 .slide-enter-active,
@@ -33,7 +40,7 @@
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  @apply duration-500 absolute top-0 w-full;
+  @apply duration-300 absolute top-0 w-full;
 }
 
 .slide-left-enter-from {

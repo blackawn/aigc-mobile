@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watchEffect, inject } from 'vue'
+import { ref, reactive, onMounted, watchEffect, inject, computed } from 'vue'
 import { Image, Button, showToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { sample } from 'lodash'
 import { storeConfig } from '@/store/config'
-import Api, { SegmentMessage } from '@/api'
+import Api, { SegmentMessage, GetSegmentDetailRes } from '@/api'
+import { provideDrawResultDetail } from '@/provide'
 import { storeMutual } from '@/store/mutual'
+import type { DrawConfig } from './index.vue'
 import { isRealEmpty } from '@/utils/is'
 
 import style_0 from '@/assets/images/style_0.jpg'
@@ -19,11 +21,6 @@ import style_7 from '@/assets/images/style_7.jpg'
 
 import { EventSourcePolyfill } from 'event-source-polyfill'
 
-interface DrawResultProps {
-  content?: string
-  result?: boolean
-}
-
 interface Style {
   label: string
   image: string
@@ -33,33 +30,65 @@ interface Style {
 
 interface Size {
   label: string
-  class: string
+  class: string,
+  value?: string
 }
 
 interface Engine {
   label: string
-  value: number
+  value?: number
 }
 
-const props = withDefaults(defineProps<DrawResultProps>(), {
-  content: '',
-  result: false
-})
+const modelToggle = defineModel(
+  'toggle',
+  { type: Boolean, default: true }
+)
 
 const emit = defineEmits<{
-  (e: 'toggle', value: boolean): void
+  (e: 'config', config: DrawConfig): void
 }>()
+
+const injectDrawResultDetail = inject(provideDrawResultDetail, null)
 
 const configStore = storeConfig()
 
 const mutualStore = storeMutual()
 
-const content = ref(props.content)
+const content = ref(injectDrawResultDetail?.value.content || '')
+
+const drawResultDetailList = computed(() => injectDrawResultDetail?.value.list || [])
 
 const mutual = reactive({
-  result: false,
   generate: false
 })
+
+const sizeList = ref<Array<Size>>([
+  {
+    label: '1:1',
+    value: '1:1',
+    class: 'w-4 h-4'
+  },
+  {
+    label: '4:3',
+    value: '4:3',
+    class: 'w-4 h-3'
+  },
+  {
+    label: '3:4',
+    value: '3:4',
+    class: 'w-3 h-4'
+  },
+  {
+    label: '16:9',
+    value: '16:9',
+    class: 'w-4 h-2.5'
+  },
+  {
+    label: '9:16',
+    value: '9:16',
+    class: 'w-2.5 h-4'
+  }
+])
 
 const styleList = ref<Array<Style>>([
   {
@@ -101,35 +130,6 @@ const randomStyle = ref<Style>({
   image: ''
 })
 
-const select = reactive({
-  style: 0,
-  size: 0,
-  engine: 0,
-})
-
-const sizeList = ref<Array<Size>>([
-  {
-    label: '1:1',
-    class: 'w-4 h-4'
-  },
-  {
-    label: '4:3',
-    class: 'w-4 h-3'
-  },
-  {
-    label: '3:4',
-    class: 'w-3 h-4'
-  },
-  {
-    label: '16:9',
-    class: 'w-4 h-2.5'
-  },
-  {
-    label: '9:16',
-    class: 'w-2.5 h-4'
-  }
-])
-
 const engineList = ref<Array<Engine>>([
   {
     label: 'DALL-E',
@@ -140,6 +140,12 @@ const engineList = ref<Array<Engine>>([
     value: 2
   }
 ])
+
+const select = reactive({
+  style: 0,
+  size: 0,
+  engine: 0,
+})
 
 // 从我的小说获取内容点击
 const handleSelectFromHistoryChatClick = () => {
@@ -192,7 +198,7 @@ const formatSegmentContent = (content: string) => {
       description: '',
       roles: [],
       is_roles: [],
-      ratio: sizeList.value[select.size].label,
+      ratio: sizeList.value[select.size].value,
       style_id: randomStyle.value.value || styleList.value[select.style].value,
       is_draw: false,
       ready_draw: false,
@@ -242,6 +248,10 @@ const handleGenerateSegmentClick = async () => {
     return
   }
 
+  if (!isRealEmpty(drawResultDetailList.value)) {
+    return
+  }
+
   mutual.generate = true
 
   const createRes = await Api.novel.createNovel({
@@ -286,7 +296,7 @@ const handleGenerateSegmentClick = async () => {
       }).finally(() => mutual.generate = false)
 
       if (res.code === 0) {
-        emit('toggle', true)
+        modelToggle.value = false
       }
     })
 
@@ -308,7 +318,7 @@ const setStyleListValue = () => {
 
 // 跳转分镜结果
 const handleToggleResultClick = () => {
-  emit('toggle', true)
+  modelToggle.value = false
 }
 
 // 获取小说的内容
@@ -325,10 +335,19 @@ const getNovelHistoryContent = async (novelId: number) => {
   content.value = res.data.content
 }
 
-watchEffect(() => {
-  content.value = props.content
-  mutual.result = props.result
-})
+// 获取绘图配置
+const getDrawConfig = () => {
+
+  const size = sizeList.value[select.size]?.value || '1:1'
+  const style = randomStyle.value?.value || styleList.value[select.style]?.value || 58
+  const engine = engineList.value[select.engine]?.value || 1
+
+  emit('config', {
+    size,
+    style,
+    engine
+  })
+}
 
 watchEffect(() => {
   if (configStore.configList) {
@@ -342,8 +361,21 @@ watchEffect(() => {
   }
 })
 
+watchEffect(() => {
+  if (!isRealEmpty(drawResultDetailList.value)) {
+    select.size = sizeList.value.findIndex((item) => item.value === drawResultDetailList.value[0].ratio)
+    select.style = styleList.value.findIndex((item) => item.value === drawResultDetailList.value[0].style_id)
+  }
+})
+
+watchEffect(() => {
+  if (select) {
+    getDrawConfig()
+  }
+})
+
 onMounted(() => {
-  content.value = '小李和小芳还有智明在吃饭'
+  //content.value = '小李和小芳还有智明在吃饭'
 })
 
 </script>
@@ -360,7 +392,7 @@ onMounted(() => {
             <span class="text-sm leading-none">生成内容</span>
           </div>
           <div
-            v-show="mutual.result"
+            v-show="(drawResultDetailList?.length > 0)"
             class="flex items-center gap-x-1 text-indigo-400 active:text-neutral-400"
             @click="handleToggleResultClick"
           >
@@ -391,7 +423,7 @@ onMounted(() => {
               <div
                 class="flex items-center gap-x-1 rounded-full border px-3 py-1 duration-300 active:bg-neutral-200"
                 :class="{
-                  'invisible opacity-0': (content.length <= 0)
+                  'invisible opacity-0': (content?.length <= 0)
                 }"
                 @click="handleClearClick"
               >
@@ -528,7 +560,7 @@ onMounted(() => {
         round
         type="primary"
         block
-        :disabled="mutual.generate"
+        :disabled="(mutual.generate || isRealEmpty(content) || !isRealEmpty(drawResultDetailList))"
         :loading="mutual.generate"
         @click="handleGenerateSegmentClick"
       >

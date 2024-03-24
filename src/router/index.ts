@@ -65,7 +65,7 @@ router.afterEach((to, from, failure) => {
     console.log(toName)
     console.log(fromName)
 
-    const slideLeft = (['signIn'].includes((toName)))
+    const slideLeft = (['signIn'].includes((toName)) && fromName)
       || ((['ai', 'chat', 'draw'].includes(fromName)) && (toName === 'mine'))
       || ((fromName === 'chat') && (toName === 'draw'))
 

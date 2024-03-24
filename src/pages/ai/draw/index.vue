@@ -1,27 +1,48 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, provide, reactive } from 'vue'
 import DrawInfo from './DrawInfo.vue'
 import DrawResult from './DrawResult.vue'
 import Api, { GetSegmentDetailRes } from '@/api'
+import { provideDrawResultDetail } from '@/provide'
 import { onMounted } from 'vue'
 
-const drawResult = ref<GetSegmentDetailRes>({
+export interface DrawConfig {
+  style: number
+  size: string
+  engine: number
+}
+
+const drawResultDetail = ref<GetSegmentDetailRes>({
   content: '',
   list: []
 })
 
-const novelId = ref(1984)
+const novelId = ref(2013)
 
-const toggleDrawInterface = ref(false)
+const toggleDrawInterface = ref(true)
+
+const drawConfig = ref<DrawConfig>({
+  style: 58,
+  size: '1:1',
+  engine: 1,
+})
+
+const drawInfoRef = ref<InstanceType<typeof DrawInfo> | null>(null)
 
 const getDrawResultDetailListData = async () => {
   const res = await Api.draw.getSegmentDetail(novelId.value)
-  drawResult.value.content = res.data.content
-  drawResult.value.list = res.data.list
+  drawResultDetail.value.content = res.data.content
+  drawResultDetail.value.list = res.data.list
 }
 
+const getDrawConfig = (config: DrawConfig) => {
+  drawConfig.value = config
+}
+
+provide(provideDrawResultDetail, drawResultDetail)
+
 onMounted(() => {
- getDrawResultDetailListData()
+  getDrawResultDetailListData()
 })
 
 </script>
@@ -32,16 +53,16 @@ onMounted(() => {
       class="flex-1 overflow-x-hidden"
     >
       <DrawInfo
-        v-if="!toggleDrawInterface"
-        :content="drawResult.content"
-        :result="(drawResult.list.length > 0)"
-        @toggle="(v) => (toggleDrawInterface = v)"
+        v-show="toggleDrawInterface"
+        ref="drawInfoRef"
+        v-model:toggle="toggleDrawInterface"
+        @config="getDrawConfig"
       />
       <DrawResult
-        v-else-if="toggleDrawInterface"
-        :data="drawResult.list"
+        v-if="!toggleDrawInterface"
+        v-model:toggle="toggleDrawInterface"
+        :config="drawConfig"
         :novel-id="novelId"
-        @toggle="(v) => (toggleDrawInterface = v)"
       />
     </div>
   </div>

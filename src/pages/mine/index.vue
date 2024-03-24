@@ -74,6 +74,12 @@ const getUserRewardInfoData = async () => {
 }
 
 // 退出登录
+const handleSignClick = () => {
+  router.push('/sign-in')
+}
+
+
+// 退出登录
 const handleSignOutClick = () => {
   openDialog({
     message: '是否退出登录?',
@@ -121,7 +127,7 @@ onMounted(() => {
               <span
                 v-if="isRealEmpty(userStore.userInfo)"
                 class="text-xl active:text-neutral-400"
-                @click="router.push('/sign-in')"
+                @click="handleSignClick"
               >立即登录</span>
               <span
                 v-else

@@ -191,7 +191,4 @@ defineExpose({
   </div>
 </template>
 <style>
-.van-button__content:before {
-  content: "";
-}
 </style>

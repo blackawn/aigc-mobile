@@ -1,41 +1,46 @@
 <script setup lang="ts">
-import { ref, h, onMounted, watchEffect } from 'vue'
+import { ref, h, onMounted, watchEffect, inject } from 'vue'
 import {
-  Checkbox,
-  CheckboxGroup,
   Divider,
   Popover,
-  PopoverAction,
   Image,
   Loading,
   Button,
   Circle,
   showImagePreview,
   showToast,
-  Lazyload 
 } from 'vant'
 import Api, { GetSegmentDetailRes, SegmentData } from '@/api'
+import { provideDrawResultDetail } from '@/provide'
 import { useBaseDialog } from '@/composables/useBaseDialog'
+import type { DrawConfig } from './index.vue'
 import ImagesManage from './component/ImagesManage.vue'
 
 import { Icon } from '@iconify/vue'
 import { isRealEmpty } from '@/utils/is'
+import { reactive } from 'vue'
 
 interface DrawResultProps {
-  data?: Array<SegmentData>
   novelId?: number
+  config?: DrawConfig
 }
 
 const props = withDefaults(defineProps<DrawResultProps>(), {
-  data: () => [],
   novelId: -1,
+  config: () => ({
+    size: '1:1',
+    style: 58,
+    engine: 1
+  })
 })
 
-const emit = defineEmits<{
-  (e: 'toggle', value: boolean): void
-}>()
+const modelToggle = defineModel('toggle',
+  { type: Boolean, default: false }
+)
 
-const drawResultList = ref(props.data)
+const injectDrawResultDetail = inject(provideDrawResultDetail, null)
+
+const drawResultList = ref<Array<SegmentData>>(injectDrawResultDetail?.value.list || [])
 
 const novelId = ref(props.novelId)
 
@@ -43,14 +48,7 @@ const imageUrlResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
 const { openDialog, closeDialog } = useBaseDialog()
 
-const imageActionsPopover: Array<PopoverAction> = [
-  { text: '多图管理', icon: 'ph:images' },
-  { text: '重绘', icon: 'mdi:image-refresh-outline' },
-  { text: '下载', icon: 'quill:folder-download' },
-  { text: '下载原图', icon: 'quill:folder-download' },
-]
-
-const imagesControlList = ref([
+const imageControlList = ref([
   {
     label: '放大',
     control: [
@@ -126,22 +124,8 @@ const handleSegmentContentEditClick = (content: string, index: number) => {
   })
 }
 
-// popover菜单点击
-const handleImageActionsPopoverClick = (actionIndex: number, segmentId: number, index: number) => {
-  switch (actionIndex) {
-    case 0:
-      handleImageManageClick(segmentId, index)
-      break
-    case 1:
-      break
-    case 2:
-      handleDownImageClick(index)
-      break
-  }
-}
-
 // 多图管理点击
-const handleImageManageClick = (segmentId: number, index: number) => {
+const handleImagesManageClick = (segmentId: number, index: number) => {
 
   const imagesManageRef = ref<InstanceType<typeof ImagesManage> | null>(null)
 
@@ -186,12 +170,17 @@ const handleSegmentImagePreviewClick = (index: number) => {
 
 // 返回分镜
 const handleToggleGenerateClick = () => {
-  emit('toggle', false)
+  modelToggle.value = true
+}
+
+// 绘图
+const handleActionDrawClick = () => {
+  console.log(props.config)
 }
 
 watchEffect(() => {
-  drawResultList.value = props.data
   novelId.value = props.novelId
+  drawResultList.value = injectDrawResultDetail?.value.list || []
 })
 
 </script>
@@ -248,11 +237,7 @@ watchEffect(() => {
           <div v-show="!isRealEmpty(result.imageUrl)">
             <div class="flex items-center justify-between">
               <span class="text-sm">图片生成结果</span>
-              <Popover
-                :actions="imageActionsPopover"
-                placement="bottom-end"
-                @select="(_, actionIndex) => handleImageActionsPopoverClick(actionIndex, result.id, itemIndex)"
-              >
+              <Popover placement="bottom-end">
                 <template #reference>
                   <div class="p-0.5 active:text-neutral-400">
                     <Icon icon="mingcute:menu-line" />
@@ -260,29 +245,28 @@ watchEffect(() => {
                 </template>
 
                 <div class="flex flex-col">
-                  <div class="flex flex-1 items-center gap-x-1.5">
+                  <div
+                    class="flex flex-1 items-center gap-x-1.5 px-3.5 py-2 active:bg-neutral-200"
+                    @click="handleImagesManageClick(result.id, itemIndex)"
+                  >
                     <Icon
                       icon="ph:images"
                       class="text-lg"
                     />
                     <span class="text-sm">多图管理</span>
                   </div>
-                  <Divider
-                    class="!my-0"
-                  />
-                  <div class="flex flex-1 items-center gap-x-1.5">
+                  <Divider class="!my-0" />
+                  <div class="flex flex-1 items-center gap-x-1.5 px-3.5 py-2 active:bg-neutral-200">
                     <Icon
-                      icon="ph:images"
+                      icon="mdi:image-refresh-outline"
                       class="text-lg"
                     />
                     <span class="text-sm">重绘</span>
                   </div>
-                  <Divider
-                    class="!my-0"
-                  />
-                  <div class="flex flex-1 items-center gap-x-1.5">
+                  <Divider class="!my-0" />
+                  <div class="flex flex-1 items-center gap-x-1.5 px-3.5 py-2 active:bg-neutral-200">
                     <Icon
-                      icon="ph:images"
+                      icon="quill:folder-download"
                       class="text-lg"
                     />
                     <span class="text-sm">下载</span>
@@ -318,7 +302,7 @@ watchEffect(() => {
             <div class="mt-6 flex justify-center">
               <div class="flex flex-col gap-y-3">
                 <div
-                  v-for="contr in imagesControlList"
+                  v-for="contr in imageControlList"
                   :key="contr.label"
                   class="flex items-center"
                 >
@@ -353,14 +337,11 @@ watchEffect(() => {
         type="success"
         class="!h-10"
         block
+        @click="handleActionDrawClick"
       >
         生成&nbsp;/&nbsp;重绘
       </Button>
     </div>
   </div>
 </template>
-<style>
-.van-popover__action {
-  @apply px-3 w-auto h-9
-}
-</style>
+<style></style>

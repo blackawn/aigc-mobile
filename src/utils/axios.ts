@@ -34,7 +34,7 @@ axiosInstance.interceptors.response.use((response: AxiosResponse) => {
     showToast(response.data.msg)
 
     if (response.data.code === 10001) {
-      router.replace('/sign-in')
+      router.push('/sign-in')
     }
 
     return Promise.reject(response.data)
