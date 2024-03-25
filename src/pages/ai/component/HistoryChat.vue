@@ -6,6 +6,7 @@ import Api, { NovelHistoryRes, NovelHistoryData } from '@/api'
 import { isEmpty, every } from 'lodash'
 import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
+import { useRoute } from 'vue-router'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { storeMutual } from '@/store/mutual'
 
@@ -13,11 +14,13 @@ const emit = defineEmits<{
   (e: 'select'): void
 }>()
 
+const route = useRoute()
+
+const mutualStore = storeMutual()
+
 const searchValue = ref('')
 
 const novelHistoryList = ref<NovelHistoryRes | null>(null)
-
-const mutualStore = storeMutual()
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -171,10 +174,13 @@ defineExpose({
       <Button
         v-show="!mutualStore.novelContentSelected"
         size="small"
-        type="success"
-        class="!px-3"
+        type="primary"
+        class="!px-3.5"
       >
-        <Icon icon="fluent:add-12-filled" />
+        <Icon
+          icon="fluent:add-12-filled"
+          class="text-sm"
+        />
       </Button>
     </div>
     <div class="scroll-hidden flex-1 overflow-x-hidden">
@@ -206,6 +212,9 @@ defineExpose({
             v-for="(record, index) in item.list"
             :key="record.novel_id"
             class="flex rounded bg-neutral-100 px-4 py-3"
+            :class="{
+              '!bg-primary text-white': (Number(route.params.id) === record.novel_id)
+            }"
             :data-index="index"
           >
             <div

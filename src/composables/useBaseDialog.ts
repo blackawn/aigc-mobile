@@ -45,7 +45,7 @@ export const useBaseDialog = () => {
           block: true,
           round: true,
           type: 'primary',
-          class: 'text-base !bg-[#165DFF]',
+          class: 'text-base',
           'onClick': () => (opt.onConfirm && opt.onConfirm()) || closeDialog()
         }, () => (opt.confirmText || '确定')),
         h(Button, {

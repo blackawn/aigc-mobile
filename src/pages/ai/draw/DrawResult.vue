@@ -52,6 +52,8 @@ const imageUrlResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
 const drawResultIdList = computed(() => drawResultList.value.map((item) => item.id))
 
+const imageManagePopoverList = ref<Array<boolean>>([])
+
 const { openDialog, closeDialog } = useBaseDialog()
 
 const imageControlList = ref([
@@ -161,8 +163,15 @@ const handleSegmentContentEditClick = (content: string, index: number) => {
   })
 }
 
+// 隐藏悬浮菜单
+const hiddenImageManagePopover = ()=>{
+  imageManagePopoverList.value = imageManagePopoverList.value.map(()=> false)
+}
+
 // 多图管理点击
 const handleImagesManageClick = (segmentId: number, index: number) => {
+
+  hiddenImageManagePopover()
 
   const imagesManageRef = ref<InstanceType<typeof ImagesManage> | null>(null)
 
@@ -182,6 +191,9 @@ const handleImagesManageClick = (segmentId: number, index: number) => {
 
 // 转换 / 重绘点击
 const handleTransformDrawClick = async (action: string, segmentId: number, taskId: string) => {
+  
+  hiddenImageManagePopover()
+  
   const res = await Api.draw.transformDraw({
     action,
     novel_id: props.novelId,
@@ -202,6 +214,9 @@ const handleTransformDrawClick = async (action: string, segmentId: number, taskI
 
 // 下载点击
 const handleDownImageClick = (index: number, original = false) => {
+
+  hiddenImageManagePopover()
+
   let url = drawResultList.value[index].imageUrl
 
   axios({
@@ -299,6 +314,7 @@ const formatDrawProgressValue = (value: string) => ref(parseInt(value))
 
 watchEffect(() => {
   drawResultList.value = injectDrawResultDetail?.value.list || []
+  imageManagePopoverList.value = drawResultList.value.map(() => false)
 })
 
 onMounted(() => {
@@ -362,7 +378,8 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <span class="text-sm">图片生成结果</span>
                   <Popover
-                    v-if="result.download_status === 1"
+                    v-if="(result.download_status === 1)"
+                    v-model:show="imageManagePopoverList[itemIndex]"
                     placement="bottom-end"
                   >
                     <template #reference>
@@ -408,7 +425,7 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="mt-2 rounded-md bg-neutral-50 p-3">
                   <div
-                    v-if="result.download_status === 1"
+                    v-if="(result.download_status === 1)"
                     class="flex min-h-24 items-center justify-center"
                     @click="handleSegmentImagePreviewClick(itemIndex)"
                   >

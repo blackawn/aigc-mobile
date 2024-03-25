@@ -33,6 +33,10 @@
   }
 }
 
+:root:root {
+  --van-blue: #165DFF;
+}
+
 .slide-enter-active,
 .slide-leave-active,
 .slide-left-enter-active,
