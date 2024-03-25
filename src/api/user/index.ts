@@ -6,7 +6,8 @@ import type {
   AccountPasswordSignInParams,
   UserInfo,
   SignInUserInfo,
-  UserRewardInfo
+  UserRewardInfo,
+  Package
 } from './types'
 import { md5 } from 'js-md5'
 
@@ -46,4 +47,9 @@ export const getUserInfo = (): R<UserInfo> => {
 // 获取用户佣金信息
 export const getUserRewardInfo = (): R<UserRewardInfo> => {
   return axiosInstance.post('/user/rewardInfo')
+}
+
+// 获取套餐包
+export const getBuyPackageList = (): R<Array<Package>> => {
+  return axiosInstance.post('/pay/goods_list')
 }

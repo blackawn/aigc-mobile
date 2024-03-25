@@ -5,7 +5,7 @@
  */
 export function numberThousand(value: string | number | undefined): string {
 
-  if (!value) return ''
+  if (!value && (value !== 0)) return ''
 
   return value.toString().replace(/(\d)(?=(?:\d{3})+$)/g, '$1,')
 }

@@ -28,7 +28,9 @@
       "@": ["src"],
       "@/*": ["src/*"]
     },
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "allowJs": true,
+    "checkJs": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]

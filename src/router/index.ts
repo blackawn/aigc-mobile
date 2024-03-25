@@ -37,6 +37,11 @@ export const routeConfig: Array<RouteRecordRaw> = [
         path: '/client/mine',
         name: 'mine',
         component: () => import('@/pages/mine/index.vue')
+      },
+      {
+        path: '/client/buy-package',
+        name: 'buyPackage',
+        component: () => import('@/pages/buy-package/index.vue')
       }
     ]
   },
@@ -67,10 +72,12 @@ router.afterEach((to, from, failure) => {
     const slideLeft = (['signIn'].includes((toName)) && fromName)
       || ((['ai', 'chat', 'draw'].includes(fromName)) && (toName === 'mine'))
       || ((fromName === 'chat') && (toName === 'draw'))
+      || (toName === 'buyPackage')
 
     const slideRight = (['signIn'].includes((fromName)))
       || ((['ai', 'chat', 'draw'].includes(toName)) && (fromName === 'mine'))
       || ((toName === 'chat') && (fromName === 'draw'))
+      || ((toName === 'mine') && (fromName === 'buyPackage'))
 
     if (slideLeft) {
       to.meta.transition = 'slide-left'

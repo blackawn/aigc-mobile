@@ -58,3 +58,21 @@ export interface UserRewardInfo {
   withdraw_in_review: number;
   withdraw: number;
 }
+
+export interface Package {
+  id: number;
+  vip_name: string;
+  price: string;
+  original_price: string;
+  time?: string;
+  is_regret: number;
+  type: number;
+  mj_times: number;
+  gpt3_tokens?: number;
+  gpt4_tokens?: number;
+  mark: string;
+  desc: string;
+  gpt3_tokens_text: string;
+  gpt4_tokens_text: string;
+  mj_times_text: string;
+}

@@ -45,5 +45,6 @@ module.exports = {
     'vue/no-unused-vars': 'warn',
 
     //
+    'tailwindcss/no-custom-classname': 'off'
   }
 }

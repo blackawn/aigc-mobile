@@ -26,4 +26,6 @@ onMounted(() => {
     <Main />
   </div>
 </template>
-<style></style>
+<style>
+
+</style>

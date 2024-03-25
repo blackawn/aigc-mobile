@@ -32,10 +32,10 @@ axiosInstance.interceptors.response.use((response: AxiosResponse) => {
   if (response.data.code !== 0) {
     showToast(response.data.msg)
 
-    if (response.data.code === 10001) {
-      userStore.cleanAll()
-      router.push('/sign-in')
-    }
+    // if (response.data.code === 10001) {
+    //   userStore.cleanAll()
+    //   router.push('/sign-in')
+    // }
 
     return Promise.reject(response.data)
   }

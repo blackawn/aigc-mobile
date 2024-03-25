@@ -3,7 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-
+  body, html{
+    @apply h-full
+  }
   body {
     @apply tracking-wide text-neutral-700 select-none
   }
@@ -30,6 +32,10 @@
     left: 50vw;
     margin: unset;
     transform: translateY(-50%) translateX(-50%);
+  }
+
+  .h-dvh{
+    @apply h-full
   }
 }
 

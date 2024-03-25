@@ -9,6 +9,7 @@ import { themeVars, themeVarsDark, themeVarsLight } from '@/theme'
     :theme-vars="themeVars"
     :theme-vars-dark="themeVarsDark"
     :theme-vars-light="themeVarsLight"
+    class="h-full"
   >
     <RouterView v-slot="{ Component, route }">
       <Transition :name="String(route.meta.transition)">
