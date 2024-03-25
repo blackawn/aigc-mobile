@@ -2,14 +2,13 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError, CancelToken } from 'ax
 import { showToast } from 'vant'
 import { storeConfig } from '@/store/config'
 import { storeUser } from '@/store/user'
-import store from '@/store'
 import { router } from '@/router'
 
 const userStore = storeUser()
 const configStore = storeConfig()
 
 export const axiosInstance: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_APP_API_URL,
   timeout: 10000,
 })
 
@@ -34,6 +33,7 @@ axiosInstance.interceptors.response.use((response: AxiosResponse) => {
     showToast(response.data.msg)
 
     if (response.data.code === 10001) {
+      userStore.cleanAll()
       router.push('/sign-in')
     }
 

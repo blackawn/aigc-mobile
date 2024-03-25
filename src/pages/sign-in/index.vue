@@ -11,7 +11,7 @@ const signInMode = ref<SignInModeType>('phone')
 
 </script>
 <template>
-  <div class="flex h-screen flex-col">
+  <div class="flex h-dvh flex-col">
     <BaseNav />
     <div class="relative flex-1">
       <Transition name="fade">

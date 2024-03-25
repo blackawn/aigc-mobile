@@ -22,7 +22,7 @@ onMounted(() => {
 
 </script>
 <template>
-  <div class="flex h-screen w-screen flex-col overflow-hidden">
+  <div class="flex h-dvh flex-col overflow-hidden">
     <Main />
   </div>
 </template>

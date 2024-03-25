@@ -280,7 +280,7 @@ const handleGenerateSegmentClick = async () => {
 
     let segmentContent = ''
 
-    const esp = new EventSourcePolyfill(`${apiUrl}/novel/segment?novel_id=${id}&message_id=1`)
+    let esp: EventSourcePolyfill | null = new EventSourcePolyfill(`${apiUrl}/novel/segment?novel_id=${id}&message_id=1`)
 
     esp.addEventListener('message', (message) => {
       segmentContent += JSON.parse(message.data).content
@@ -294,6 +294,8 @@ const handleGenerateSegmentClick = async () => {
         lt.close()
         showToast('未生成有效分镜,请重试')
         mutual.generate = false
+        esp?.close()
+        esp = null
         return
       }
 
@@ -307,10 +309,8 @@ const handleGenerateSegmentClick = async () => {
       })
 
       if (res.code === 0) {
-        lt.close()
         showToast('分镜生成成功!')
         emit('done', id)
-        modelToggle.value = false
       }
     })
 
