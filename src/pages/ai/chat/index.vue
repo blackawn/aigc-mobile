@@ -11,6 +11,7 @@ import Api from '@/api'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { parseTime } from '@/utils/format'
 import { useRoute } from 'vue-router'
+import { router } from '@/router'
 import { isRealEmpty } from '@/utils/is'
 
 interface ChatDialogData {
@@ -174,10 +175,7 @@ const handleGuideButtonClick = async (data: Pick<DialogData, 'type' | 'content'>
       }
     }
 
-    // ********** 自己跳转自己 ***********/
-    // 目的是为了生成会话的时候, 执行刷新还会获取当前会话的数据
-    // 缺点: 多余的一次相同渲染
-    // router.push(`/client/ai/chat/${1}/${1646}`)
+    router.options.history.push(`/client/ai/chat/${type}/${novelId.value}`)
   }
 }
 
@@ -234,25 +232,25 @@ const scrollElToBottom: (behavior?: 'auto' | 'instant' | 'smooth', auto?: boolea
 watchEffect(() => {
   const type = Number(route.params.type)
   const id = Number(route.params.id)
+
   if ((type > 0) && (id > 0)) {
     chatDialogData.value.type = type
     getChatDialogListData(id)
-  }
+  } 
+
 })
 
 provide(provideScrollElemToBottom, (behavior) => scrollElToBottom(behavior))
 provide(provideModifyInputBoxStatus, modifyInputBoxStatus)
 
 onMounted(() => {
-  console.log('render')
+  console.log('render-chat')
   initChatDialog()
 })
 
 </script>
 <template>
-  <div
-    class="flex h-full flex-col bg-neutral-100"
-  >
+  <div class="flex h-full flex-col bg-neutral-100">
     <div
       ref="scrollElem"
       class="flex-1 overflow-x-hidden"
@@ -272,6 +270,7 @@ onMounted(() => {
         />
         <NovelGeneration
           v-if="(chatDialogData.type === 1)"
+          :key="novelId"
           ref="novelGenerationRef"
           :data="chatDialogData.dialog"
           :guide="chatDialogData.guide"

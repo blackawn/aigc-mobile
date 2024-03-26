@@ -3,8 +3,8 @@ import { ref, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { isRealEmpty } from '@/utils/is'
-import { provideIncreaseRouterCount } from '@/provide'
 import { router } from '@/router'
+import { provideIncreaseRouterCount } from '@/provide'
 
 interface InputBoxProps {
   disabled?: boolean
@@ -16,11 +16,11 @@ const props = withDefaults(defineProps<InputBoxProps>(), {
 
 const value = ref('')
 
-const injectIncreaseRouterCount = inject(provideIncreaseRouterCount, null)
-
 const emit = defineEmits<{
   (e: 'send', value: string): void
 }>()
+
+const injectIncreaseRouterCount = inject(provideIncreaseRouterCount,null)
 
 const send = () => {
 
@@ -41,10 +41,12 @@ const onSend = (event: KeyboardEvent) => {
 const handleNewChatClick = () => {
 
   const path = '/client/ai/chat'
-  if (router.currentRoute.value.path !== path) {
-    router.push(path)
+  if ((router.options.history.state.current !== path) &&
+    ((router.options.history.state.back as string)?.includes('chat'))) {
+    router.back()
+  } else {
+    router.push('/client/ai/chat')
   }
-  injectIncreaseRouterCount?.()
 }
 
 </script>

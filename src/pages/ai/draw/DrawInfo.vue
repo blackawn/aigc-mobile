@@ -4,11 +4,12 @@ import { Image, Button, showToast, showLoadingToast } from 'vant'
 import { Icon } from '@iconify/vue'
 import { sample } from 'lodash'
 import { storeConfig } from '@/store/config'
-import Api, { SegmentMessage, GetSegmentDetailRes } from '@/api'
+import Api, { SegmentMessage } from '@/api'
 import { provideDrawResultDetail } from '@/provide'
 import { storeMutual } from '@/store/mutual'
 import type { DrawConfig } from './index.vue'
 import { isRealEmpty } from '@/utils/is'
+import { router } from '@/router'
 
 import style_0 from '@/assets/images/style_0.jpg'
 import style_1 from '@/assets/images/style_1.jpg'
@@ -310,6 +311,7 @@ const handleGenerateSegmentClick = async () => {
 
       if (res.code === 0) {
         showToast('分镜生成成功!')
+        router.options.history.push(`/client/ai/draw/${id}`)
         emit('done', id)
       }
     })
@@ -371,6 +373,10 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  content.value = injectDrawResultDetail?.value.content || ''
+})
+
+watchEffect(() => {
   if (mutualStore.novelContentIdSelect > 0) {
     getNovelHistoryContent(mutualStore.novelContentIdSelect)
   }
@@ -387,10 +393,6 @@ watchEffect(() => {
   if (select) {
     getDrawConfig()
   }
-})
-
-onMounted(() => {
-  //content.value = '小李和小芳还有智明在吃饭'
 })
 
 </script>

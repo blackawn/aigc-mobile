@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watchEffect, provide } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { Popup } from 'vant'
 import { Icon } from '@iconify/vue'
 import BaseNav from '@/components/BaseNav/index.vue'
 import { useRoute } from 'vue-router'
-import { provideIncreaseRouterCount } from '@/provide'
 import HistoryChat from './component/HistoryChat.vue'
 import { router } from '@/router'
 import { storeMutual } from '@/store/mutual'
@@ -37,11 +36,7 @@ const onPopupClosed = () => {
   mutualStore.modifyNovelContentSelected(false)
 }
 
-const increaseRouterCount = () => {
-  routerCount.value += 1
-}
-
-const handleHistoryChatRecordClick = () => {
+const onHistoryChatClose = () => {
   showPopup.value = false
 }
 
@@ -60,8 +55,6 @@ watchEffect(()=>{
     handleHistoryClick()
   }
 })
-
-provide(provideIncreaseRouterCount, increaseRouterCount)
 
 </script>
 <template>
@@ -124,7 +117,7 @@ provide(provideIncreaseRouterCount, increaseRouterCount)
     >
       <HistoryChat
         ref="historyChatRef"
-        @select="handleHistoryChatRecordClick"
+        @close="onHistoryChatClose"
       />
     </Popup>
   </div>

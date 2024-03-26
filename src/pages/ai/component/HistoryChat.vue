@@ -11,7 +11,7 @@ import { useBaseDialog } from '@/composables/useBaseDialog'
 import { storeMutual } from '@/store/mutual'
 
 const emit = defineEmits<{
-  (e: 'select'): void
+  (e: 'close'): void
 }>()
 
 const route = useRoute()
@@ -62,6 +62,17 @@ const getNovelHistoryListData = async (keyword = '') => {
   mutual.load = false
 
   novelHistoryList.value = res.data
+}
+
+// 新建
+const handleCreateClick = () => {
+
+  const paths = ['/client/ai/chat','/client/ai/draw']
+  if (!paths.includes(router.options.history.state.current as string)) {
+    router.push(route.matched[route.matched.length - 1])
+  }
+
+  emit('close')
 }
 
 // 编辑置顶
@@ -144,7 +155,7 @@ const handleRecordClick = (data: NovelHistoryData) => {
   } else if ([4].includes(data.type)) {
     router.push(`/client/ai/draw/${data.novel_id}`)
   }
-  emit('select')
+  emit('close')
 }
 
 defineExpose({
@@ -176,6 +187,7 @@ defineExpose({
         size="small"
         type="primary"
         class="!px-3.5"
+        @click="handleCreateClick"
       >
         <Icon
           icon="fluent:add-12-filled"
@@ -262,5 +274,9 @@ defineExpose({
 <style>
 .van-divider--content-left:before {
   @apply max-w-0 mr-2;
+}
+
+.van-search__content {
+  @apply bg-neutral-200/50
 }
 </style>
