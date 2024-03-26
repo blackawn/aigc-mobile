@@ -54,7 +54,6 @@ const disabledInputBox = computed(() => {
 })
 
 const mutual = reactive({
-  scrollSmooth: false,
   autoScroll: false,
   inputBoxStatus: false,
 })
@@ -62,12 +61,6 @@ const mutual = reactive({
 let lastScrollTop = 0
 
 let isAutoScroll = true
-
-// onBeforeRouteUpdate((to, form, next) => {
-//   console.log(to)
-
-//   next(true)
-// })
 
 // 请求获取会话框信息
 const getChatDialogListData = async (id: number) => {
@@ -226,7 +219,7 @@ const onElScroll = (e: Event) => {
 // 滚动到底部
 const scrollElToBottom: (behavior?: 'auto' | 'instant' | 'smooth', auto?: boolean) => void = (behavior = 'smooth', auto = false) => {
 
-  if (!isAutoScroll && auto) return
+  if (!isAutoScroll && !auto) return
 
   requestAnimationFrame(() => {
     if (scrollElem.value) {
@@ -258,15 +251,11 @@ onMounted(() => {
 </script>
 <template>
   <div
-    ref="xRef"
     class="flex h-full flex-col bg-neutral-100"
   >
     <div
       ref="scrollElem"
       class="flex-1 overflow-x-hidden"
-      :class="{
-        'scroll-smooth': mutual.scrollSmooth
-      }"
       @scroll="onElScroll"
     >
       <div class="flex flex-col gap-y-5 p-4">
