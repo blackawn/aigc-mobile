@@ -87,8 +87,6 @@ const generateBaseContent = () => {
     esp.value?.close()
     esp.value = null
     mutual.generate = false
-
-    console.log('error')
   })
 
   let timer = setInterval(() => {
