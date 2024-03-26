@@ -5,7 +5,7 @@ export const themeVars: ConfigProviderThemeVars = {
   navBarBackground: 'transparent',
   cellGroupInsetRadius: '12px',
   cellBorderColor: '#d4d4d4',
-  tagPrimaryColor: '#165DFF'
+  tagPrimaryColor: '#165DFF',
 }
 
 export const themeVarsDark: ConfigProviderThemeVars = {
