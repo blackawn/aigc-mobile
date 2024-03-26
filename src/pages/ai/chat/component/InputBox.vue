@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
-import { provideIncreaseRouterCount } from '@/provide'
 
 interface InputBoxProps {
   disabled?: boolean
@@ -19,8 +18,6 @@ const value = ref('')
 const emit = defineEmits<{
   (e: 'send', value: string): void
 }>()
-
-const injectIncreaseRouterCount = inject(provideIncreaseRouterCount,null)
 
 const send = () => {
 
