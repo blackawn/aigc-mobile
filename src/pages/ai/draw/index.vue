@@ -52,7 +52,7 @@ watchEffect(() => {
 })
 
 onMounted(() => {
-  //getDrawResultDetailListData(1984)
+  console.log('render-draw')
 })
 
 </script>
