@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const send = () => {
 
-  if (isRealEmpty(value.value.trim())) {
+  if (isRealEmpty(value.value)) {
     showToast('请输入有效内容')
     return
   }

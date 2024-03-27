@@ -110,7 +110,7 @@ const handleEditClick = (data: NovelHistoryData) => {
       'onUpdate:modelValue': (v) => value.value = v
     }),
     onConfirm: async () => {
-      if (isRealEmpty(value.value?.trim())) {
+      if (isRealEmpty(value.value)) {
         showToast('请输入标题')
         return
       }

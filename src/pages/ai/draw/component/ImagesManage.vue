@@ -15,17 +15,13 @@ const props = withDefaults(defineProps<ImagesManageProps>(), {
   novelId: -1
 })
 
-const imageResize = import.meta.env.VITE_APP_IMAGE_RESIZE
+const imageUrlResize = import.meta.env.VITE_APP_IMAGE_RESIZE
 
 const select = ref(-1)
 
 const drawResultTasList = ref<Array<SegmentImagesTask>>([])
 
-const imageList = computed(() => {
-  return drawResultTasList.value.map((item) => (item.imageUrl))
-})
-
-const imageSelected = computed(() => imageList.value[select.value])
+const imageSelected = computed(() => drawResultTasList.value[select.value]?.imageUrl || '')
 
 const getDrawResultTasListData = async () => {
 
@@ -43,14 +39,18 @@ const handleImageSelect = (index: number) => {
   select.value = (index === select.value ? -1 : index)
 }
 
-const handleImagePreview = (index: number) => {
+const handleImagePreview = (taskId: string) => {
 
-  const imagePreviewList = imageList.value
-    .map((item) => ((`${item}${imageResize}`)))
+  const filterImagePreviewList = drawResultTasList.value
+    .filter((flItem) => !isRealEmpty(flItem.imageUrl))
+
+  const prevIndex = filterImagePreviewList.findIndex((item) => item.task_id === taskId)
+
+  const imagePreviewList = filterImagePreviewList.map((item) => `${item.imageUrl}${imageUrlResize}`)
 
   showImagePreview({
     images: imagePreviewList,
-    startPosition: (select.value === -1 ? 0 : index),
+    startPosition: (select.value === -1 ? 0 : prevIndex),
     closeable: true,
     closeOnClickImage: false
   })
@@ -82,7 +82,7 @@ defineExpose({
     >
       <Image
         class="size-full"
-        :src="`${item.imageUrl}${imageResize}`"
+        :src="`${item.imageUrl}${imageUrlResize}`"
       >
         <template #loading>
           <Loading
@@ -98,7 +98,7 @@ defineExpose({
       <div
         v-show="!isRealEmpty(item.imageUrl)"
         class="absolute right-2 top-2 rounded-md bg-black/35 p-1.5 text-white active:text-neutral-400"
-        @click.stop="handleImagePreview(index)"
+        @click.stop="handleImagePreview(item.task_id)"
       >
         <Icon icon="grommet-icons:view" />
       </div>

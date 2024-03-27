@@ -91,7 +91,7 @@ const handleRemoveRoleClick = (index: number) => {
 
 // 确认
 const handleConfirmClick = () => {
-  const isVacancy = roleList.value.every((item) => !isRealEmpty(item.name.trim()) && !isRealEmpty(item.character))
+  const isVacancy = roleList.value.every((item) => !isRealEmpty(item.name) && !isRealEmpty(item.character))
 
   if (!isVacancy) {
     showToast('请填写完整角色信息!')

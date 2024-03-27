@@ -16,7 +16,7 @@ interface UserBaseInfoProps {
   textColor?: 'white' | 'black'
 }
 
-const props = withDefaults(defineProps<UserBaseInfoProps>(),{
+const props = withDefaults(defineProps<UserBaseInfoProps>(), {
   textColor: 'white'
 })
 
@@ -38,6 +38,8 @@ const vipStatusMap: Record<string, VipStatus> = {
   }
 }
 
+const { gpt_tokens, gpt_tokens_used, dallE3_total, dallE3_times_used, mj_total, mj_times_used } = userStore.userInfo
+
 // 会员开通状态
 const userVipStatus = computed(() => {
   return vipStatusMap[userStore.userInfo.is_vip] || vipStatusMap.default
@@ -45,14 +47,17 @@ const userVipStatus = computed(() => {
 
 // 小说总数
 const chatTotal = computed(() => {
-  const { gpt_tokens, gpt_tokens_used } = userStore.userInfo
   return numberThousand((gpt_tokens - gpt_tokens_used)) || 0
 })
 
-// 绘图总数
-const drawTotal = computed(() => {
-  const { dallE3_total, dallE3_times_used, mj_total, mj_times_used } = userStore.userInfo
-  return numberThousand((dallE3_total + mj_total) - (dallE3_times_used + mj_times_used)) || 0
+// MJ绘图总数
+const drawMJTotal = computed(() => {
+  return numberThousand(mj_total - mj_times_used) || 0
+})
+
+// DALL绘图总数
+const drawDALLTotal = computed(() => {
+  return numberThousand(dallE3_total - dallE3_times_used) || 0
 })
 
 // 获取用户信息
@@ -105,7 +110,7 @@ onMounted(() => {
           class="text-xl"
         >{{ userStore.userInfo.nickname }}</span>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center text-wrap">
         <!-- <span
           v-if="(!isRealEmpty(userStore.userInfo))"
           class="mr-1.5 rounded px-1 py-[0.075rem] text-ss text-white"
@@ -120,17 +125,18 @@ onMounted(() => {
         >登陆体验更多创作功能</span>
         <span
           v-else
-          class="truncate text-sm"
+          class="text-sm"
           :class="{
             'text-neutral-300': (props.textColor === 'white'),
             'text-neutral-500': (props.textColor === 'black')
           }"
-        >小说:&nbsp;{{ chatTotal }}次&nbsp;&nbsp;绘图:&nbsp;{{
-          drawTotal
+        >小说:&nbsp;{{ chatTotal }}次&nbsp;&nbsp;MJ绘图:&nbsp;{{
+          drawMJTotal
+        }}次&nbsp;&nbsp;DALL绘图:&nbsp;{{
+          drawDALLTotal
         }}次</span>
       </div>
     </div>
   </div>
 </template>
-<style>
-</style>
+<style></style>

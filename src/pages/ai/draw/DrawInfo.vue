@@ -341,7 +341,7 @@ const getNovelHistoryContent = async (novelId: number) => {
     mutualStore.modifyNovelContentIdSelect(-1)
   })
 
-  if (isRealEmpty(res.data.content.trim())) {
+  if (isRealEmpty(res.data.content)) {
     showToast('该小说内容为空!')
     return
   }

@@ -61,19 +61,19 @@ const imageControlList = ref([
     label: '放大',
     control: [
       {
-        text: 'U1',
+        label: 'U1',
         value: 'U1'
       },
       {
-        text: 'U2',
+        label: 'U2',
         value: 'U2'
       },
       {
-        text: 'U3',
+        label: 'U3',
         value: 'U3'
       },
       {
-        text: 'U4',
+        label: 'U4',
         value: 'U4'
       }
     ]
@@ -82,19 +82,19 @@ const imageControlList = ref([
     label: '变换',
     control: [
       {
-        text: 'V1',
+        label: 'V1',
         value: 'V1'
       },
       {
-        text: 'V2',
+        label: 'V2',
         value: 'V2'
       },
       {
-        text: 'V3',
+        label: 'V3',
         value: 'V3'
       },
       {
-        text: 'V4',
+        label: 'V4',
         value: 'V4'
       }
     ]
@@ -164,8 +164,8 @@ const handleSegmentContentEditClick = (content: string, index: number) => {
 }
 
 // 隐藏悬浮菜单
-const hiddenImageManagePopover = ()=>{
-  imageManagePopoverList.value = imageManagePopoverList.value.map(()=> false)
+const hiddenImageManagePopover = () => {
+  imageManagePopoverList.value = imageManagePopoverList.value.map(() => false)
 }
 
 // 多图管理点击
@@ -184,16 +184,18 @@ const handleImagesManageClick = (segmentId: number, index: number) => {
     }),
     onConfirm: () => {
       const url = imagesManageRef.value?.imageSelected
-      drawResultList.value[index].imageUrl = url as string
+      if (!isRealEmpty(url)) {
+        drawResultList.value[index].imageUrl = url as string
+      }
     }
   })
 }
 
 // 转换 / 重绘点击
 const handleTransformDrawClick = async (action: string, segmentId: number, taskId: string) => {
-  
+
   hiddenImageManagePopover()
-  
+
   const res = await Api.draw.transformDraw({
     action,
     novel_id: props.novelId,
@@ -242,15 +244,19 @@ const handleDownImageClick = (index: number, original = false) => {
 }
 
 // 分镜图片预览点击
-const handleSegmentImagePreviewClick = (index: number) => {
+const handleSegmentImagePreviewClick = (id: number) => {
 
-  const imagePreviewList = drawResultList.value
-    .map((item) => (`${item.imageUrl}${imageUrlResize}`))
+  const filterImagePreviewList = drawResultList.value
+    .filter((flItem) => !isRealEmpty(flItem.imageUrl))
+
+  const prevIndex = filterImagePreviewList.findIndex((item) => item.id === id)
+
+  const imagePreviewList = filterImagePreviewList.map((item) => `${item.imageUrl}${imageUrlResize}`)
 
   showImagePreview({
     images: imagePreviewList,
     closeable: true,
-    startPosition: index,
+    startPosition: prevIndex,
     closeOnClickImage: false
   })
 }
@@ -364,7 +370,7 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <span class="text-sm">分镜文本</span>
                   <div
-                    v-show="([0,1,5,7].includes(result.status))"
+                    v-show="([0, 1, 5, 7].includes(result.status))"
                     class="p-0.5 active:text-neutral-400"
                     @click="handleSegmentContentEditClick(result.description, itemIndex)"
                   >
@@ -429,7 +435,7 @@ onBeforeUnmount(() => {
                   <div
                     v-if="(result.download_status === 1)"
                     class="flex min-h-24 items-center justify-center"
-                    @click="handleSegmentImagePreviewClick(itemIndex)"
+                    @click="handleSegmentImagePreviewClick(result.id)"
                   >
                     <Image
                       v-lazy="`${result.imageUrl}${imageUrlResize}`"
@@ -461,7 +467,14 @@ onBeforeUnmount(() => {
                         :text="result.draw_progress"
                       />
                     </div>
-                    <span class="text-primary">{{ result.status_text }}</span>
+                    <span
+                      :class="{
+                        'text-green-500': (result.status === 1),
+                        'text-primary': ([2, 3, 4].includes(result.status)),
+                        'text-orange-500': (result.status === 7),
+                        'text-red-500': (result.status === 5)
+                      }"
+                    >{{ result.status_text }}</span>
                   </div>
                 </div>
                 <div
@@ -478,11 +491,11 @@ onBeforeUnmount(() => {
                       <div class="ml-3 flex gap-x-3">
                         <span
                           v-for="control in contr.control"
-                          :key="control.text"
+                          :key="control.label"
                           class="rounded-md border px-4 py-1 text-sm"
                           @click="handleTransformDrawClick(control.value, result.id, result.task_id)"
                         >
-                          {{ control.text }}
+                          {{ control.label }}
                         </span>
                       </div>
                     </div>
