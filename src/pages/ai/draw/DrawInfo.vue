@@ -250,14 +250,11 @@ const handleGenerateSegmentClick = async () => {
     return
   }
 
-  if (!isRealEmpty(drawResultDetailList.value)) {
-    return
-  }
-
   const lt = showLoadingToast({
     message: '生成中...',
     forbidClick: true,
     loadingType: 'spinner',
+    duration: 0
   })
 
   mutual.generate = true
@@ -409,7 +406,7 @@ watchEffect(() => {
             <span class="text-sm leading-none">生成内容</span>
           </div>
           <div
-            v-show="(drawResultDetailList?.length > 0)"
+            v-show="((drawResultDetailList?.length > 0) && !mutual.generate)"
             class="flex items-center gap-x-1 active:text-neutral-400"
             @click="handleToggleResultClick"
           >
@@ -425,7 +422,6 @@ watchEffect(() => {
             v-model="content"
             placeholder="请输入您的小说全文"
             rows="7"
-            maxlength="5000"
             class="size-full resize-none whitespace-pre-wrap break-words bg-transparent align-bottom text-sm"
           />
           <div class="mt-2 flex items-end justify-between">
@@ -447,8 +443,11 @@ watchEffect(() => {
                 <span class="text-xs leading-none">清空</span>
               </div>
             </div>
-            <span class="text-sm text-neutral-500">
-              {{ content.length }}/5000
+            <span
+              v-show="(content.length > 0)"
+              class="text-sm text-neutral-500"
+            >
+              {{ content.length }}
             </span>
           </div>
         </div>
@@ -577,7 +576,7 @@ watchEffect(() => {
         round
         type="primary"
         block
-        :disabled="(mutual.generate || isRealEmpty(content) || !isRealEmpty(drawResultDetailList))"
+        :disabled="(mutual.generate || isRealEmpty(content))"
         :loading="mutual.generate"
         @click="handleGenerateSegmentClick"
       >

@@ -341,7 +341,7 @@ watchEffect(() => {
 
 watch(() => chatDialogData.value, (n, o) => {
   injectScrollElemToBottom?.((isRealEmpty(o?.length) ? 'auto' : 'smooth'))
-},{ deep: true })
+}, { deep: true, immediate: true })
 
 defineExpose({
   inputBackgroundAnswer,

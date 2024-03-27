@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, provide } from 'vue'
 import { Popup } from 'vant'
 import { Icon } from '@iconify/vue'
 import BaseNav from '@/components/BaseNav/index.vue'
 import { useRoute } from 'vue-router'
+import { provideIncreaseRouterCount } from '@/provide'
 import HistoryChat from './component/HistoryChat.vue'
 import { router } from '@/router'
 import { storeMutual } from '@/store/mutual'
@@ -40,6 +41,10 @@ const onHistoryChatClose = () => {
   showPopup.value = false
 }
 
+const increaseRouterCount = () => {
+  routerCount.value += 1
+}
+
 watchEffect(() => {
   if (route.path) {
     routerCount.value += 1
@@ -50,11 +55,12 @@ watchEffect(() => {
   routeName.value = route.name as string
 })
 
-watchEffect(()=>{
-  if(mutualStore.novelContentSelected){
+watchEffect(() => {
+  if (mutualStore.novelContentSelected) {
     handleHistoryClick()
   }
 })
+provide(provideIncreaseRouterCount, increaseRouterCount)
 
 </script>
 <template>
@@ -96,9 +102,7 @@ watchEffect(()=>{
       </template>
     </BaseNav>
     <div class="relative flex-1 overflow-hidden">
-      <RouterView
-        v-slot="{ Component, route: rt }"
-      >
+      <RouterView v-slot="{ Component, route: rt }">
         <Transition :name="String(rt.meta.transition)">
           <component
             :is="Component"
@@ -122,5 +126,4 @@ watchEffect(()=>{
     </Popup>
   </div>
 </template>
-<style scoped>
-</style>
+<style scoped></style>

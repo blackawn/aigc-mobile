@@ -31,6 +31,12 @@ const drawConfig = ref<DrawConfig>({
 
 const drawInfoRef = ref<InstanceType<typeof DrawInfo> | null>(null)
 
+const onDrawInfoGenerateDone = async (id: number)=>{
+  await getDrawResultDetailListData(id)
+
+  toggleDrawInterface.value = false
+}
+
 const getDrawResultDetailListData = async (id: number) => {
   const res = await Api.draw.getSegmentDetail(id)
   drawResultDetail.value.content = res.data.content
@@ -67,7 +73,7 @@ onMounted(() => {
         ref="drawInfoRef"
         v-model:toggle="toggleDrawInterface"
         @config="getDrawConfig"
-        @done="getDrawResultDetailListData"
+        @done="onDrawInfoGenerateDone"
       />
       <DrawResult
         v-if="!toggleDrawInterface"

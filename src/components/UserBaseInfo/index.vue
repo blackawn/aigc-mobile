@@ -106,11 +106,11 @@ onMounted(() => {
         >{{ userStore.userInfo.nickname }}</span>
       </div>
       <div class="flex items-center">
-        <span
+        <!-- <span
           v-if="(!isRealEmpty(userStore.userInfo))"
           class="mr-1.5 rounded px-1 py-[0.075rem] text-ss text-white"
           :class="userVipStatus.color"
-        >{{ userVipStatus.value }}</span>
+        >{{ userVipStatus.value }}</span> -->
         <span
           v-if="(isRealEmpty(userStore.userInfo))"
           class="truncate text-sm"

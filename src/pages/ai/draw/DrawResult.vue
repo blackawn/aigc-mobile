@@ -280,9 +280,10 @@ const handleActionDrawClick = async () => {
   })
   if (res.code === 0) {
     showNotify({
-      message: '提示！绘图过程时间可能较久',
+      message: '提示！绘图过程时间可能较久，您可以稍后再来查看',
       type: 'primary'
     })
+    getDrawProgressData()
     resume()
   }
 }
@@ -363,6 +364,7 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <span class="text-sm">分镜文本</span>
                   <div
+                    v-show="([0,1,5,7].includes(result.status))"
                     class="p-0.5 active:text-neutral-400"
                     @click="handleSegmentContentEditClick(result.description, itemIndex)"
                   >

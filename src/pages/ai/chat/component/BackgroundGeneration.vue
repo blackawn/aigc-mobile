@@ -8,6 +8,7 @@ import { provideScrollElemToBottom } from '@/provide'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
 import { useClipboard } from '@vueuse/core'
+import { storeUser } from '@/store/user'
 
 export interface BackgroundGenerationProps {
   data?: string
@@ -31,6 +32,8 @@ const emit = defineEmits<{
 }>()
 
 const injectScrollElemToBottom = inject(provideScrollElemToBottom, null)
+
+const userStore = storeUser()
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -70,7 +73,9 @@ const generateBackground = () => {
 
   const apiUrl = import.meta.env.VITE_APP_API_URL.replace(/\/$/, '')
 
-  const url = `${apiUrl}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}`
+  const params = `config_id=2&Authorization=${userStore.token}`
+
+  const url = `${apiUrl}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}&${params}`
 
   esp.value = new EventSourcePolyfill(url)
 
