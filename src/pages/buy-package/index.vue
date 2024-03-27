@@ -13,18 +13,20 @@ const buyPackageList = ref<Array<Package>>([])
 
 const selectPackage = ref(-1)
 
-const totalPrice = computed(() => (buyPackageList.value[selectPackage.value]?.price || 0))
+const settlementPrice = computed(() => (buyPackageList.value[selectPackage.value]?.price || 0))
+const settlementOffer = computed(() => Number(buyPackageList.value[selectPackage.value]?.price || 0)
+  - Number(buyPackageList.value[selectPackage.value]?.original_price || 0))
 
 const getBuyPackageListData = async () => {
   const res = await Api.user.getBuyPackageList()
   buyPackageList.value = res.data
 }
 
-const handlePackageClick = (index: number)=>{
+const handlePackageClick = (index: number) => {
   selectPackage.value = index === selectPackage.value ? -1 : index
 }
 
-const handleBuyClick = ()=>{
+const handleBuyClick = () => {
   hq()
 }
 
@@ -56,11 +58,11 @@ onMounted(() => {
         <span>购买套餐</span>
       </template>
     </BaseNav>
-    <div class="p-4">
-      <UserBaseInfo text-color="black" />
-    </div>
-    <div class="flex-1 overflow-hidden rounded-t-3xl bg-white pt-4">
-      <div class="h-full overflow-x-hidden">
+    <div class="flex h-full flex-col overflow-x-hidden">
+      <div class="p-4">
+        <UserBaseInfo text-color="black" />
+      </div>
+      <div class="flex-1 rounded-t-3xl bg-white pt-4">
         <div class="px-4">
           <div class="flex items-center gap-x-2 pl-2">
             <div class="h-4 w-2 rounded-sm bg-primary" />
@@ -110,7 +112,7 @@ onMounted(() => {
                   </div>
                 </div>
                 <div class="bg-primary/80 py-1.5 text-center text-xs text-white">
-                  立省￥{{ 10 }}
+                  立省￥{{ (Number(item.price) - Number(item.original_price)) }}
                 </div>
               </div>
             </TransitionGroup>
@@ -227,8 +229,8 @@ onMounted(() => {
     </div>
     <div class="flex items-center bg-white px-4 py-2 shadow">
       <div class="mr-2 flex w-24 shrink-0 flex-col text-center text-primary">
-        <span><span class="text-sm">￥</span><span class="text-lg">{{ numberThousand(totalPrice) }}</span></span>
-        <span class="text-xs">已优惠￥0</span>
+        <span><span class="text-sm">￥</span><span class="text-lg">{{ numberThousand(settlementPrice) }}</span></span>
+        <span class="text-xs">已优惠￥{{ settlementOffer }}</span>
       </div>
       <div
         class="flex flex-1 items-center justify-center rounded-md bg-gradient-to-r from-primary/60 to-primary py-2.5 text-white active:from-primary active:to-primary"
