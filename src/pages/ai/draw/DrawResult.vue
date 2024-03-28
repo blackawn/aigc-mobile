@@ -215,6 +215,8 @@ const handleTransformDrawClick = async (action: string, segmentId: number, taskI
       type: 'primary'
     })
 
+    getTransformDrawProgressData(action, segmentId)
+
     let timer: ReturnType<typeof setInterval> = setInterval(() => {
       getTransformDrawProgressData(action, segmentId, () => {
         clearInterval(timer)
@@ -321,7 +323,7 @@ const handleActionDrawClick = async () => {
       message: '提示！绘图过程时间可能较久，您可以稍后再来查看',
       type: 'primary'
     })
-
+    getDrawProgressData()
     intervalGetDrawProgressData()
   }
 }
