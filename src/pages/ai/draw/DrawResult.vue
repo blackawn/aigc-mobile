@@ -11,6 +11,7 @@ import {
   Circle,
   showImagePreview,
   showToast,
+  closeNotify,
   showNotify
 } from 'vant'
 import Api, { SegmentData } from '@/api'
@@ -21,6 +22,7 @@ import ImagesManage from './component/ImagesManage.vue'
 import { useIntervalFn } from '@vueuse/core'
 import axios from 'axios'
 import { Icon } from '@iconify/vue'
+import { router } from '@/router'
 import { isRealEmpty } from '@/utils/is'
 import { getFileExtension } from '@/utils/format'
 import { every } from 'lodash'
@@ -221,26 +223,20 @@ const handleDownImageClick = (index: number, original = false) => {
 
   let url = drawResultList.value[index].imageUrl
 
-  axios({
-    method: 'GET',
-    url: url,
-    responseType: 'blob',
+  showNotify({
+    message: '长按图片即可保存',
+    type: 'primary',
+    className: 'custom',
+    duration: 0,
+    onClick: closeNotify
   })
-    .then(({ data }) => {
-      let blobUrl = window.URL.createObjectURL(new Blob([data]))
-      let aElem = document.createElement('a')
-      aElem.style.display = 'none'
-      aElem.href = blobUrl
-      let fileName = `${customAlphabet('1234567890abcdef', 32)()}.${getFileExtension(url)}`
-      aElem.setAttribute('download', fileName)
-      document.body.appendChild(aElem)
-      aElem.click()
-      window.URL.revokeObjectURL(blobUrl)
-      document.body.removeChild(aElem)
-    })
-    .catch((error) => {
-      console.log(error)
-    })
+
+  showImagePreview({
+    images: [url],
+    showIndex: false,
+    onClose: closeNotify,
+    closeOnClickImage: false
+  })
 }
 
 // 分镜图片预览点击
@@ -283,7 +279,18 @@ const handleActionDrawClick = async () => {
     novel_id: props.novelId,
     style_id: props.config.style,
     type: props.config.engine
+  }).catch((res) => {
+    if (res.code === 10005) {
+      setTimeout(() => {
+        router.push('/client/buy-package')
+      }, 1000)
+    }
+    return { code: res.code }
+  }).finally(() => {
+    mutual.action = false
+    segmentSelectList.value = []
   })
+
   if (res.code === 0) {
     showNotify({
       message: '提示！绘图过程时间可能较久，您可以稍后再来查看',

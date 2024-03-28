@@ -5,8 +5,9 @@ import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundModify from './BackgroundModify.vue'
 import { isRealEmpty } from '@/utils/is'
 import { provideScrollElemToBottom } from '@/provide'
-import { EventSourcePolyfill } from 'event-source-polyfill'
+import { EventSourcePolyfill, NativeEventSource } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
+import { router } from '@/router'
 import { useClipboard } from '@vueuse/core'
 import { storeUser } from '@/store/user'
 
@@ -47,14 +48,14 @@ const backgroundList = computed(() => {
   return backgroundContent.value.split(/(?=故事背景\d+：)/)
 })
 
-const esp = ref<EventSourcePolyfill | null>(null)
+const esp = ref<EventSource | null>(null)
 
 const backgroundModifyRef = ref<InstanceType<typeof BackgroundModify> | null>(null)
 
 const selected = ref(props.selected)
 
 const mutual = reactive({
-  generate: false
+  generate: false,
 })
 
 // 生成背景
@@ -77,9 +78,16 @@ const generateBackground = () => {
 
   const url = `${apiUrl}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}&${params}`
 
-  esp.value = new EventSourcePolyfill(url)
+  esp.value = new NativeEventSource(url)
 
   esp.value.addEventListener('message', (message) => {
+
+    if (JSON.parse(message.data).code === 10004) {
+      showToast('次数不足，请充值')
+      setTimeout(() => {
+        router.push('/client/buy-package')
+      }, 1000)
+    }
     backgroundContent.value += JSON.parse(message.data).content
 
   })
@@ -191,6 +199,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   esp.value?.close()
+  esp.value = null
 })
 
 </script>
@@ -210,7 +219,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div
-      v-show="!isRealEmpty(backgroundList)"
+      v-show="(!isRealEmpty(backgroundList))"
       class="mt-2 flex flex-col gap-y-2"
     >
       <div
@@ -227,7 +236,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div
-      v-if="(!mutual.generate && !props.disabled)"
+      v-show="(!mutual.generate && !props.disabled)"
       class="mt-3 flex justify-between"
     >
       <div

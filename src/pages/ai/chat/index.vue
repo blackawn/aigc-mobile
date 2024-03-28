@@ -237,7 +237,6 @@ watchEffect(() => {
     chatDialogData.value.type = type
     getChatDialogListData(id)
   } 
-
 })
 
 provide(provideScrollElemToBottom, (behavior) => scrollElToBottom(behavior))

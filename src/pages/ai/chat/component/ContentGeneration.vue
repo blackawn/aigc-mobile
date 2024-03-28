@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, onBeforeUnmount, watchEffect, inject } from 'vue'
+import { ref, onMounted, reactive, watchEffect, onBeforeUnmount, inject } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button, showToast } from 'vant'
+import { showToast } from 'vant'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { isRealEmpty } from '@/utils/is'
+import { router } from '@/router'
 import { NativeEventSource, EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useClipboard } from '@vueuse/core'
@@ -41,11 +42,11 @@ const { copy, copied, isSupported } = useClipboard({
 const mutual = reactive({
   generate: false
 })
-const { openDialog, closeDialog } = useBaseDialog()
+const { openDialog } = useBaseDialog()
 
 const baseContent = ref(props.data)
 
-const esp = ref<EventSourcePolyfill | EventSource |null>(null)
+const esp = ref<EventSourcePolyfill | EventSource | null>(null)
 
 const generateBaseContent = () => {
 
@@ -71,6 +72,14 @@ const generateBaseContent = () => {
   injectModifyInputBoxStatus?.(true)
 
   esp.value.addEventListener('message', (message) => {
+
+    if (JSON.parse(message.data).code === 10004) {
+      showToast('次数不足，请充值')
+      setTimeout(() => {
+        router.push('/client/buy-package')
+      }, 1000)
+    }
+
     baseContent.value += JSON.parse(message.data).content
   })
 

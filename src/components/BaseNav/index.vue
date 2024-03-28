@@ -11,7 +11,8 @@ interface NavBarEvent {
 const props = withDefaults(defineProps<Partial<NavBarProps & NavBarEvent>>(), {
   placeholder: true,
   border: false,
-  onClickLeft: () => router.back()
+  onClickLeft: () => router.back(),
+  onClickRight: () => router.push('/client')
 })
 
 </script>
@@ -33,7 +34,12 @@ const props = withDefaults(defineProps<Partial<NavBarProps & NavBarEvent>>(), {
       <slot name="title" />
     </template>
     <template #right>
-      <slot name="right" />
+      <slot name="right">
+        <Icon
+          icon="codicon:home"
+          class="text-2xl"
+        />
+      </slot>
     </template>
   </NavBar>
 </template>

@@ -67,7 +67,7 @@ router.afterEach((to, from, failure) => {
     const toName = to.name as string
     const fromName = from.name as string
 
-   // console.log(toName, fromName)
+    console.log(toName, fromName)
 
     const slideLeft = (['signIn'].includes((toName)) && fromName)
       || ((['ai', 'chat', 'draw'].includes(fromName)) && (toName === 'mine'))
@@ -78,6 +78,7 @@ router.afterEach((to, from, failure) => {
       || ((['ai', 'chat', 'draw'].includes(toName)) && (fromName === 'mine'))
       || ((toName === 'chat') && (fromName === 'draw'))
       || ((toName === 'mine') && (fromName === 'buyPackage'))
+      || ((toName === 'chat') && (fromName === 'buyPackage'))
 
     if (slideLeft) {
       to.meta.transition = 'slide-left'

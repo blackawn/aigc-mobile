@@ -447,7 +447,7 @@ watchEffect(() => {
               v-show="(content.length > 0)"
               class="text-sm text-neutral-500"
             >
-              {{ content.length }}
+              {{ content.length }}字
             </span>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { isRealEmpty } from '@/utils/is'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import OutlineModify from './OutlineModify.vue'
+import { router } from '@/router'
 import { useClipboard } from '@vueuse/core'
 import Api from '@/api'
 
@@ -37,6 +38,7 @@ const { copy, copied, isSupported } = useClipboard({
 const mutual = reactive({
   generate: false
 })
+
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -69,6 +71,14 @@ const generateOutlineContent = () => {
   esp.value = new EventSourcePolyfill(url)
 
   esp.value.addEventListener('message', (message) => {
+
+    if (JSON.parse(message.data).code === 10004) {
+      showToast('次数不足，请充值')
+      setTimeout(() => {
+        router.push('/client/buy-package')
+      }, 1000)
+    }
+
     outlineContent.value += JSON.parse(message.data).content
   })
 
@@ -181,7 +191,7 @@ onBeforeUnmount(() => {
       {{ outlineContent }}
     </div>
     <div
-      v-if="(!mutual.generate && !props.disabled)"
+      v-show="(!mutual.generate && !props.disabled)"
       class="mt-3 flex justify-between"
     >
       <div
@@ -194,7 +204,9 @@ onBeforeUnmount(() => {
         />
         <span class="ml-2 text-sm">重新生成</span>
       </div>
-      <div class="flex items-center gap-x-2">
+      <div
+        class="flex items-center gap-x-2"
+      >
         <Button
           size="small"
           round

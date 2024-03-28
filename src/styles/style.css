@@ -34,6 +34,10 @@
     transform: translateY(-50%) translateX(-50%);
   }
 
+  .custom.van-notify{
+    z-index: 9999!important;
+  }
+
   .h-dvh{
     @apply h-full
   }

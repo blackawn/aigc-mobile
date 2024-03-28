@@ -5,6 +5,7 @@ import { Button, showToast } from 'vant'
 import { provideScrollElemToBottom } from '@/provide'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { isRealEmpty } from '@/utils/is'
+import { router } from '@/router'
 import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useClipboard } from '@vueuse/core'
 import Api from '@/api'
@@ -87,6 +88,14 @@ const generateChapterContent = (type?: number) => {
   esp.value = new EventSourcePolyfill(url)
 
   esp.value.addEventListener('message', (message) => {
+
+    if (JSON.parse(message.data).code === 10004) {
+      showToast('次数不足，请充值')
+      setTimeout(() => {
+        router.push('/client/buy-package')
+      }, 1000)
+    }
+
     chapterContent.value += JSON.parse(message.data).content
   })
 
