@@ -14,7 +14,7 @@ export interface SegmentData {
   is_draw: number;
   ratio: string;
   style_id: number;
-  task_id: string;
+  task_id: string | number;
   imageUrl: string;
   imageUrl_1: string;
   status: number;
@@ -97,6 +97,7 @@ export interface ActionDrawParams {
 }
 
 export interface GetDrawProgressParams {
+  action?: string
   ids: Array<number>;
 }
 
@@ -119,6 +120,6 @@ export interface TransformDrawParams {
   novel_id: number
   segment_id: number
   action: string  //U1 U2 U3 U4 V1 V2 V3 V4 RE
-  task_id: string,
+  task_id: string | number,
   type: number // 1:midjourney, 2: gpt dalle-3
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, onMounted, watchEffect, inject, computed, onBeforeUnmount, reactive } from 'vue'
+import { ref, h, onMounted, watchEffect, inject, computed, onBeforeUnmount, reactive, nextTick } from 'vue'
 import {
   CheckboxGroup,
   Checkbox,
@@ -20,13 +20,10 @@ import { useBaseDialog } from '@/composables/useBaseDialog'
 import type { DrawConfig } from './index.vue'
 import ImagesManage from './component/ImagesManage.vue'
 import { useIntervalFn } from '@vueuse/core'
-import axios from 'axios'
 import { Icon } from '@iconify/vue'
 import { router } from '@/router'
 import { isRealEmpty } from '@/utils/is'
-import { getFileExtension } from '@/utils/format'
-import { every } from 'lodash'
-import { customAlphabet } from 'nanoid'
+import { every, some, includes } from 'lodash'
 
 interface DrawResultProps {
   novelId?: number
@@ -117,9 +114,9 @@ const mutual = reactive({
   action: false
 })
 
-const { pause, resume, isActive } = useIntervalFn(() => {
+const { pause, resume: intervalGetDrawProgressData, isActive } = useIntervalFn(() => {
   getDrawProgressData()
-}, 5000)
+}, 3000, { immediate: false })
 
 const checkAllChange = (val: boolean) => {
   segmentSelectList.value = val ? drawResultIdList.value : []
@@ -186,7 +183,11 @@ const handleImagesManageClick = (segmentId: number, index: number) => {
       novelId: props.novelId,
       segmentId
     }),
+    onCancel: () => {
+      imagesManageRef.value?.pause()
+    },
     onConfirm: () => {
+      imagesManageRef.value?.pause()
       const url = imagesManageRef.value?.imageSelected
       if (!isRealEmpty(url)) {
         drawResultList.value[index].imageUrl = url as string
@@ -196,7 +197,7 @@ const handleImagesManageClick = (segmentId: number, index: number) => {
 }
 
 // 转换 / 重绘点击
-const handleTransformDrawClick = async (action: string, segmentId: number, taskId: string) => {
+const handleTransformDrawClick = async (action: string, segmentId: number, taskId: string | number) => {
 
   hiddenImageManagePopover()
 
@@ -209,17 +210,21 @@ const handleTransformDrawClick = async (action: string, segmentId: number, taskI
   })
 
   if (res.code === 0) {
-    segmentSelectList.value = [segmentId]
     showNotify({
-      message: '提示！绘图过程时间可能较久',
+      message: '转换绘图过程时间可能较久，您或可以在多图管理中查看',
       type: 'primary'
     })
-    resume()
+
+    let timer: ReturnType<typeof setInterval> = setInterval(() => {
+      getTransformDrawProgressData(action, segmentId, () => {
+        clearInterval(timer)
+      })
+    }, 3000)
   }
 }
 
 // 下载点击
-const handleDownImageClick = (index: number, original = false) => {
+const handleDownImageClick = (index: number) => {
 
   hiddenImageManagePopover()
 
@@ -264,21 +269,31 @@ const handleToggleGenerateClick = () => {
   modelToggle.value = true
 }
 
-// 开始绘图
+// 生成绘图
 const handleActionDrawClick = async () => {
-
-  pause()
 
   if (isRealEmpty(segmentSelectList.value)) {
     showToast('请选择分镜!')
     return
   }
 
+  const hasDrawSegment = some(drawResultList.value, item => includes(segmentSelectList.value, item.id) && (item.task_id !== 0))
+
+  if (hasDrawSegment) {
+    showToast('存在已有生成任务的脚本，请重新选择')
+    return
+  }
+
+  pause()
+
   mutual.action = true
 
   segmentSelected.value = false
 
-  taskIdList.value = [...segmentSelectList.value]
+  // 这里要做添加操作，然后去重，用户有可能一个一个的生成配图
+  taskIdList.value.push(...segmentSelectList.value)
+
+  taskIdList.value = [...new Set(taskIdList.value)]
 
   const res = await Api.draw.actionDraw({
     ids: segmentSelectList.value,
@@ -286,15 +301,19 @@ const handleActionDrawClick = async () => {
     style_id: props.config.style,
     type: props.config.engine
   }).catch((res) => {
+
     if (res.code === 10005) {
       setTimeout(() => {
         router.push('/client/buy-package')
       }, 1000)
     }
     return { code: res.code }
+
   }).finally(() => {
+
     mutual.action = false
     segmentSelectList.value = []
+
   })
 
   if (res.code === 0) {
@@ -303,14 +322,11 @@ const handleActionDrawClick = async () => {
       type: 'primary'
     })
 
-    console.log(taskIdList.value)
-
-    getDrawProgressData()
-    resume()
+    intervalGetDrawProgressData()
   }
 }
 
-// 获取绘图进度
+// 获取生成配图进度
 const getDrawProgressData = async () => {
 
   if (isRealEmpty(taskIdList.value)) return
@@ -329,8 +345,28 @@ const getDrawProgressData = async () => {
   if (every(res.data, obj => obj.download_status === 1) ||
     every(res.data, obj => obj.status === 5)) {
     pause()
-    mutual.action = false
   }
+}
+
+// 获取转换绘图进度
+const getTransformDrawProgressData = async (action: string, segmentId: number, callback?: () => void) => {
+
+  if (isRealEmpty(action)) return
+
+  const res = await Api.draw.getDrawProgress({
+    action,
+    ids: [segmentId]
+  })
+
+  const index = drawResultList.value.findIndex(result => (result.id === res.data[0].id))
+  if (index !== -1) {
+    Object.assign(drawResultList.value[index], res.data[0])
+  }
+
+  if ((res.data[0].download_status === 1) || (res.data[0].status === 5)) {
+    callback?.()
+  }
+
 }
 
 const formatDrawProgressValue = (value: string) => ref(parseInt(value))
@@ -341,7 +377,13 @@ watchEffect(() => {
 })
 
 onMounted(() => {
-  pause()
+  setTimeout(() => {
+    nextTick(() => {
+      taskIdList.value = drawResultList.value.filter((flItem) => [3].includes(flItem.status)).map((item) => item.id)
+
+      intervalGetDrawProgressData()
+    })
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
@@ -393,7 +435,9 @@ onBeforeUnmount(() => {
                     <Icon icon="lucide:edit" />
                   </div>
                 </div>
-                <div class="mt-2 max-h-28 min-h-20 whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-justify text-sm text-neutral-500">
+                <div
+                  class="mt-2 max-h-28 min-h-20 whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-justify text-sm text-neutral-500"
+                >
                   {{ result.description }}
                 </div>
               </div>
@@ -402,7 +446,6 @@ onBeforeUnmount(() => {
                 <div class="flex items-center justify-between">
                   <span class="text-sm">图片生成结果</span>
                   <Popover
-                    v-if="(result.download_status === 1)"
                     v-model:show="imageManagePopoverList[itemIndex]"
                     placement="bottom-end"
                   >
@@ -435,6 +478,9 @@ onBeforeUnmount(() => {
                       </div>
                       <Divider class="!my-0" />
                       <div
+                        :class="{
+                          'pointer-events-none text-neutral-300': (result.download_status !== 1)
+                        }"
                         class="flex flex-1 items-center gap-x-1.5 px-3.5 py-2 active:bg-neutral-200"
                         @click="handleDownImageClick(itemIndex)"
                       >
@@ -508,7 +554,7 @@ onBeforeUnmount(() => {
                         <span
                           v-for="control in contr.control"
                           :key="control.label"
-                          class="rounded-md border px-4 py-1 text-sm"
+                          class="rounded-md border px-4 py-1 text-sm active:bg-neutral-200"
                           @click="handleTransformDrawClick(control.value, result.id, result.task_id)"
                         >
                           {{ control.label }}
@@ -558,7 +604,7 @@ onBeforeUnmount(() => {
         class="!h-10 flex-1 shrink-0 text-nowrap"
         @click="handleActionDrawClick"
       >
-        生成&nbsp;/&nbsp;重绘 {{ `${(segmentSelected && segmentSelectList.length > 0) ? `(${segmentSelectList.length})` : ''}`
+        生成绘图 {{ `${(segmentSelected && segmentSelectList.length > 0) ? `(${segmentSelectList.length})` : ''}`
         }}
       </Button>
     </div>
