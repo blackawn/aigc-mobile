@@ -111,6 +111,8 @@ const segmentSelectIndeterminate = ref(true)
 
 const segmentSelectList = ref<Array<number>>([])
 
+const taskIdList = ref<Array<number>>([])
+
 const mutual = reactive({
   action: false
 })
@@ -265,6 +267,8 @@ const handleToggleGenerateClick = () => {
 // 开始绘图
 const handleActionDrawClick = async () => {
 
+  pause()
+
   if (isRealEmpty(segmentSelectList.value)) {
     showToast('请选择分镜!')
     return
@@ -273,6 +277,8 @@ const handleActionDrawClick = async () => {
   mutual.action = true
 
   segmentSelected.value = false
+
+  taskIdList.value = [...segmentSelectList.value]
 
   const res = await Api.draw.actionDraw({
     ids: segmentSelectList.value,
@@ -296,6 +302,9 @@ const handleActionDrawClick = async () => {
       message: '提示！绘图过程时间可能较久，您可以稍后再来查看',
       type: 'primary'
     })
+
+    console.log(taskIdList.value)
+
     getDrawProgressData()
     resume()
   }
@@ -304,10 +313,10 @@ const handleActionDrawClick = async () => {
 // 获取绘图进度
 const getDrawProgressData = async () => {
 
-  if (isRealEmpty(segmentSelectList.value)) return
+  if (isRealEmpty(taskIdList.value)) return
 
   const res = await Api.draw.getDrawProgress({
-    ids: segmentSelectList.value
+    ids: taskIdList.value
   })
 
   res.data.forEach((item) => {
@@ -317,10 +326,10 @@ const getDrawProgressData = async () => {
     }
   })
 
-  if (every(res.data, obj => obj.download_status === 1)) {
+  if (every(res.data, obj => obj.download_status === 1) ||
+    every(res.data, obj => obj.status === 5)) {
     pause()
     mutual.action = false
-    segmentSelectList.value = []
   }
 }
 
@@ -384,7 +393,7 @@ onBeforeUnmount(() => {
                     <Icon icon="lucide:edit" />
                   </div>
                 </div>
-                <div class="mt-2 max-h-28 min-h-20 whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-justify text-sm">
+                <div class="mt-2 max-h-28 min-h-20 whitespace-pre-wrap rounded-md bg-neutral-50 p-2 text-justify text-sm text-neutral-500">
                   {{ result.description }}
                 </div>
               </div>
