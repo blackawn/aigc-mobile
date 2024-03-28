@@ -2,8 +2,6 @@ import { axiosInstance } from '@/utils/axios'
 import {
   CreateNovelParams,
   CreateNovelRes,
-  CreateNovelBackgroundParams,
-  CreateNovelBackgroundRes,
   NovelHistoryParams,
   NovelHistoryRes,
   ModifyNovelHistoryParams,

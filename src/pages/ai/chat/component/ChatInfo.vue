@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { withDefaults } from 'vue'
 import { DialogData } from './types'
-import { onMounted } from 'vue'
 
 export interface ChatDialogProps {
   data?: DialogData

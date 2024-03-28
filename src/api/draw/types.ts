@@ -1,5 +1,3 @@
-import { editSegment } from '.'
-
 export interface GetSegmentDetailRes {
   list: Array<SegmentData>;
   content: string;

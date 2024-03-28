@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, onBeforeUnmount, h, watchEffect, inject } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount, h, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button, showToast } from 'vant'
 import { provideScrollElemToBottom } from '@/provide'
@@ -38,7 +38,6 @@ const { copy, copied, isSupported } = useClipboard({
 const mutual = reactive({
   generate: false
 })
-
 
 const { openDialog, closeDialog } = useBaseDialog()
 
@@ -151,12 +150,6 @@ const handleCopyClick = async () => {
     showToast('复制成功')
   }
 }
-
-// watchEffect(() => {
-//   if (!isRealEmpty(props.data)) {
-//     outlineContent.value = props.data
-//   }
-// })
 
 onMounted(() => {
   if (isRealEmpty(props.data)) {

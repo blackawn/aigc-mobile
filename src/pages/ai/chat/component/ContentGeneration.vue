@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive, watchEffect, onBeforeUnmount, inject } from 'vue'
+import { ref, onMounted, reactive, onBeforeUnmount, inject } from 'vue'
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { provideScrollElemToBottom, provideModifyInputBoxStatus } from '@/provide'
 import { isRealEmpty } from '@/utils/is'
 import { router } from '@/router'
-import { NativeEventSource, EventSourcePolyfill } from 'event-source-polyfill'
+import { EventSourcePolyfill } from 'event-source-polyfill'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import { useClipboard } from '@vueuse/core'
 import Api from '@/api'
@@ -46,7 +46,7 @@ const { openDialog } = useBaseDialog()
 
 const baseContent = ref(props.data)
 
-const esp = ref<EventSourcePolyfill | EventSource | null>(null)
+const esp = ref<EventSourcePolyfill | null>(null)
 
 const generateBaseContent = () => {
 
@@ -67,7 +67,7 @@ const generateBaseContent = () => {
 
   const url = `${apiUrl}${props.apiMap}?novel_id=${props.novelId}&message_id=1`
 
-  esp.value = new NativeEventSource(url)
+  esp.value = new EventSourcePolyfill(url)
 
   injectModifyInputBoxStatus?.(true)
 
@@ -123,12 +123,6 @@ const handleCopyClick = async () => {
     showToast('复制成功')
   }
 }
-
-// watchEffect(() => {
-//   if (!isRealEmpty(props.data)) {
-//     outlineContent.value = props.data
-//   }
-// })
 
 onMounted(() => {
   if (isRealEmpty(props.data)) {

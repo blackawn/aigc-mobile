@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, h, onMounted, reactive, onBeforeUnmount, watchEffect, inject } from 'vue'
+import { computed, ref, h, onMounted, reactive, onBeforeUnmount, inject } from 'vue'
 import { Button, showToast } from 'vant'
 import { useBaseDialog } from '@/composables/useBaseDialog'
 import BackgroundModify from './BackgroundModify.vue'
 import { isRealEmpty } from '@/utils/is'
 import { provideScrollElemToBottom } from '@/provide'
-import { EventSourcePolyfill, NativeEventSource } from 'event-source-polyfill'
+import { EventSourcePolyfill } from 'event-source-polyfill'
 import { Icon } from '@iconify/vue'
 import { router } from '@/router'
 import { useClipboard } from '@vueuse/core'
@@ -78,7 +78,7 @@ const generateBackground = () => {
 
   const url = `${apiUrl}/novel/generate/background?novel_id=${props.novelId}&content=${props.keyword}&${params}`
 
-  esp.value = new NativeEventSource(url)
+  esp.value = new EventSourcePolyfill(url)
 
   esp.value.addEventListener('message', (message) => {
 
@@ -187,15 +187,6 @@ onMounted(() => {
     generateBackground()
   }
 })
-
-// watchEffect(() => {
-
-//   if (!isRealEmpty(props.data)) {
-//     backgroundContent.value = props.data
-//   }
-
-//   selected.value = props.selected
-// })
 
 onBeforeUnmount(() => {
   esp.value?.close()

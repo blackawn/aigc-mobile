@@ -3,7 +3,6 @@ import {
   GetSegmentDetailRes,
   GetSegmentImagesTaskListParams,
   SegmentImagesTaskList,
-  SegmentData,
   EditSegmentParams,
   SaveSegmentParams,
   ActionDrawParams,
